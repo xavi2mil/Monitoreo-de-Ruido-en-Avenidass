@@ -1,0 +1,12 @@
+# Ignorar archivos de respaldo creados por editores de texto
+*~
+
+# Ignorar archivos de compilación y ejecutables
+*.o
+*.exe
+
+# Ignorar archivos de configuración específicos del entorno
+/config.ini
+
+# Ignora claves y tokens guardadas en .txt
+*.txt
