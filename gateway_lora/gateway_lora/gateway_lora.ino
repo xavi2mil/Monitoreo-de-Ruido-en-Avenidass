@@ -14,9 +14,9 @@
 #define BAND    915E6
 
 EspMQTTClient client(
-  "ARRIS-2DF2",
-  "qwerty1234",
-  "192.168.0.11",  // MQTT Broker server ip
+  "W308-rep",
+  "W308-internet",
+  "172.17.76.13",  // MQTT Broker server ip
   // "MQTTUsername",   // Can be omitted if not needed
   // "MQTTPassword",   // Can be omitted if not needed
   "Sonometro2",     // Client name that uniquely identify your device
@@ -89,7 +89,7 @@ void loop() {
     int packetSize = LoRa.parsePacket();
     if (packetSize) { 
       cbk(packetSize);  
-      client.publish("nivel_ruido/sonometro/sono1", packet);
+      client.publish("ruido_avenida/nivel_ruido/nodo_1", packet);
     }
 
     delay(10);

@@ -75,7 +75,7 @@ String packet ;
 #define MIC_SENSITIVITY   -26         // dBFS value expected at MIC_REF_DB (Sensitivity value from datasheet)
 #define MIC_REF_DB        94.0        // Value at which point sensitivity is specified in datasheet (dB)
 #define MIC_OVERLOAD_DB   116.0       // dB - Acoustic overload point
-#define MIC_NOISE_DB      33          // dB - Noise floor
+#define MIC_NOISE_DB      25         // dB - Noise floor
 #define MIC_BITS          24          // valid number of bits in I2S data
 #define MIC_CONVERT(s)    (s >> (SAMPLE_BITS - MIC_BITS))
 #define MIC_TIMING_SHIFT  0           // Set to one to fix MSB timing for some microphones, i.e. SPH0645LM4H-x
