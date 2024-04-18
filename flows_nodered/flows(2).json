@@ -1,0 +1,254 @@
+[
+    {
+        "id": "4edef22ca00abc41",
+        "type": "tab",
+        "label": "Flow 6",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "f3e92f294ba0db80",
+        "type": "mqtt in",
+        "z": "4edef22ca00abc41",
+        "name": "avSanPablo/sensor1/leq",
+        "topic": "avSanPablo/sensor1/leq",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "7d40449aa21a1456",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "a97181c6ef9ed6d3",
+                "cc5409051efc895f"
+            ]
+        ]
+    },
+    {
+        "id": "a97181c6ef9ed6d3",
+        "type": "debug",
+        "z": "4edef22ca00abc41",
+        "name": "avSanPablo/sensor1/leq",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 450,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "cc5409051efc895f",
+        "type": "function",
+        "z": "4edef22ca00abc41",
+        "name": "function 19",
+        "func": "var nivelRuido = msg.payload;\nnivelRuido = (nivelRuido === \"inf\" || nivelRuido === NaN) ? 116 : nivelRuido;\n\nmsg.payload = [\n    [{\n        ruido: nivelRuido,\n        time: new Date().getTime()\n    },\n    {\n        tag1: \"sensor1\"\n    }]\n];\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 220,
+        "wires": [
+            [
+                "ac027ae5e6e3ec9a"
+            ]
+        ]
+    },
+    {
+        "id": "e468e2da64d66976",
+        "type": "influxdb out",
+        "z": "4edef22ca00abc41",
+        "influxdb": "79af230609cffad3",
+        "name": "ruidoAvenida",
+        "measurement": "leq",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "PI",
+        "bucket": "ruidoAvenida",
+        "x": 810,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "d6bfd92fa83995ad",
+        "type": "mqtt in",
+        "z": "4edef22ca00abc41",
+        "name": "avSanPablo/sensor2/leq",
+        "topic": "avSanPablo/sensor1/leq",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "7d40449aa21a1456",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 300,
+        "wires": [
+            [
+                "687f03bbd228a5a2",
+                "be844c1dd1210499",
+                "3b06ca2eba75b5db"
+            ]
+        ]
+    },
+    {
+        "id": "687f03bbd228a5a2",
+        "type": "debug",
+        "z": "4edef22ca00abc41",
+        "name": "avSanPablo/sensor2/leq",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 450,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "be844c1dd1210499",
+        "type": "function",
+        "z": "4edef22ca00abc41",
+        "name": "function 20",
+        "func": "var nivelRuido = msg.payload;\nnivelRuido = (nivelRuido === \"inf\" || nivelRuido === NaN) ? 116 : nivelRuido;\n\nmsg.payload = [\n    [{\n        ruido: nivelRuido-2,\n        time: new Date().getTime() \n    },\n    {\n        tag1: \"sensor2\"\n    }]\n];\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 380,
+        "wires": [
+            [
+                "e468e2da64d66976"
+            ]
+        ]
+    },
+    {
+        "id": "11accefbae28369a",
+        "type": "comment",
+        "z": "4edef22ca00abc41",
+        "name": "",
+        "info": "El nombre de los topics deben de \ntener la siguiente forma:\nlugar/sensorId/medicion\nEjemplo:\n\"avSanPablo/sensor1/nivelRuido\"\n",
+        "x": 340,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "ac027ae5e6e3ec9a",
+        "type": "influxdb out",
+        "z": "4edef22ca00abc41",
+        "influxdb": "79af230609cffad3",
+        "name": "ruidoAvenida",
+        "measurement": "leq",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "PI",
+        "bucket": "ruidoAvenida",
+        "x": 810,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "3b06ca2eba75b5db",
+        "type": "function",
+        "z": "4edef22ca00abc41",
+        "name": "function 21",
+        "func": "var nivelRuido = msg.payload;\nnivelRuido = (nivelRuido === \"inf\" || nivelRuido===NaN) ? 116 : nivelRuido;\n\nmsg.payload =\n    {\n        ruido: nivelRuido\n    }\n;\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 480,
+        "wires": [
+            [
+                "925bf8370acba6ab"
+            ]
+        ]
+    },
+    {
+        "id": "925bf8370acba6ab",
+        "type": "debug",
+        "z": "4edef22ca00abc41",
+        "name": "prueba",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 640,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "7d40449aa21a1456",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "172.17.76.13",
+        "port": "1883",
+        "clientid": "yomi",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "79af230609cffad3",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": "8086",
+        "protocol": "http",
+        "database": "database",
+        "name": "base de datos",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://localhost:8086",
+        "timeout": "10",
+        "rejectUnauthorized": true
+    }
+]

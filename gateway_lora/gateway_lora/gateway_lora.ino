@@ -28,8 +28,8 @@ SSD1306 display(0x3c, 21, 22);
 String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
-String conexion_wifi;
-String conexion_MQTT;
+String conexionWifi;
+String conexionMQTT;
 
 void loraData(){
   display.clear();
@@ -38,11 +38,11 @@ void loraData(){
   display.drawString(0 , 15 , "Received "+ packSize + " bytes");
   display.drawStringMaxWidth(0 , 26 , 128, packet);
   display.drawString(0, 0, rssi); 
-  display.drawString(0, 40, "wifi:" + conexion_wifi);
-  display.drawString(0, 50, "MQTT:"+ conexion_MQTT);
+  display.drawString(0, 40, "wifi:" + conexionWifi);
+  display.drawString(0, 50, "MQTT:"+ conexionMQTT);
   display.display();
-  Serial.println(rssi);
-  Serial.println(packet);
+  //Serial.println(rssi);
+  //Serial.println(packet);
 }
 
 void cbk(int packetSize) {
@@ -83,26 +83,23 @@ void setup() {
 
 void loop() {
   client.loop();
-  if (client.isMqttConnected()&client.isWifiConnected()){
-    conexion_wifi="conectado";
-    conexion_MQTT="conectado";
+
+  if (client.isMqttConnected()){
+    conexionWifi="conectado";
+    conexionMQTT="conectado";
     int packetSize = LoRa.parsePacket();
     if (packetSize) { 
       cbk(packetSize);  
-      client.publish("ruido_avenida/nivel_ruido/nodo_1", packet);
+      client.publish("avSanPablo/sensor1/leq", packet);
     }
 
     delay(10);
   }
-  else{
-    Serial.println("Conexion no establecida...");
-    conexion_wifi="desconectado";
-    conexion_MQTT="desconectado";
-    loraData();
-  }
+  
 }
 void onConnectionEstablished()
 {
+  Serial.println("Hola");
   // Subscribe to "mytopic/test" and display received message to Serial
   // client.subscribe("temperatura/temp", [](const String & payload) {
   //   Serial.println(payload);
