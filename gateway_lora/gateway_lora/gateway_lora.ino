@@ -100,6 +100,17 @@ void loop() {
 void onConnectionEstablished()
 {
   Serial.println("Hola");
+  display.clear();
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 15 , "Gateway LoRa");
+  display.drawString(0, 30 , "Esperando a los nodos");
+  // display.drawString(0 , 15 , "Received "+ packSize + " bytes");
+  // display.drawStringMaxWidth(0 , 26 , 128, packet);
+  // display.drawString(0, 0, rssi); 
+
+  display.display();
+  
   // Subscribe to "mytopic/test" and display received message to Serial
   // client.subscribe("temperatura/temp", [](const String & payload) {
   //   Serial.println(payload);
