@@ -10,7 +10,7 @@
 #define SS      18   // GPIO18 -- CS
 #define RST     23   // GPIO14 -- RESET (If Lora does not work, replace it with GPIO14)
 #define DI0     26   // GPIO26 -- IRQ(Interrupt Request)
-#define BAND    868E6
+#define BAND    915E6
 
 
 unsigned int counter = 0;
@@ -23,8 +23,8 @@ String packet ;
  
 
 void setup() {
-  pinMode(16,OUTPUT);
-  pinMode(2,OUTPUT);
+  // pinMode(16,OUTPUT);
+  // pinMode(2,OUTPUT);
   
   digitalWrite(16, LOW);    // set GPIO16 low to reset OLED
   delay(50); 
@@ -37,7 +37,7 @@ void setup() {
   
   SPI.begin(SCK,MISO,MOSI,SS);
   LoRa.setPins(SS,RST,DI0);
-  if (!LoRa.begin(868E6)) {
+  if (!LoRa.begin(915E6)) {
     Serial.println("Starting LoRa failed!");
     while (1);
   }
