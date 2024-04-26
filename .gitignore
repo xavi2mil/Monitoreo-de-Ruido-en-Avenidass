@@ -11,3 +11,4 @@
 # Ignora claves y tokens guardadas en .txt
 *.txt
 *.yaml
+config.h
