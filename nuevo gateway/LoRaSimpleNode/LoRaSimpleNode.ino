@@ -36,6 +36,11 @@
 #define DI0     26   // GPIO26 -- IRQ(Interrupt Request)
 #define BAND    915E6
 
+String rssi = "RSSI --";
+String packSize = "--";
+String packet ;
+byte id=0x00;
+
 void setup() {
   Serial.begin(115200);                   // initialize serial
   while (!Serial);
@@ -55,22 +60,27 @@ void setup() {
   Serial.println("Rx: invertIQ enable");
   Serial.println();
 
-  LoRa.onReceive(onReceive);
-  LoRa.onTxDone(onTxDone);
+  //LoRa.onReceive(onReceive);
+  //LoRa.onTxDone(onTxDone);
+  LoRa_rxMode();
+}
+
+void cbk(int packetSize) {
+  packet ="";
+  packSize = String(packetSize,DEC);
+  for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
+  rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
+  Serial.println(packet);
+  delay(10);
+  LoRa_txMode();
+  LoRa_sendMessage("Hola, soy un nodo");
   LoRa_rxMode();
 }
 
 void loop() {
-  if (runEvery(1000)) { // repeat every 1000 millis
-
-    String message = "HeLoRa World! ";
-    message += "I'm a Node! ";
-    message += millis();
-
-    LoRa_sendMessage(message); // send a message
-
-    Serial.println("Send Message!");
-  }
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) { cbk(packetSize);  }
+  delay(10);
 }
 
 void LoRa_rxMode(){
@@ -98,7 +108,7 @@ void onReceive(int packetSize) {
   }
 
   // Serial.print("Node Receive: ");
-  // Serial.println(message);
+  Serial.println(message);
 }
 
 void onTxDone() {
@@ -106,15 +116,15 @@ void onTxDone() {
   LoRa_rxMode();
 }
 
-boolean runEvery(unsigned long interval)
-{
-  static unsigned long previousMillis = 0;
-  unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= interval)
-  {
-    previousMillis = currentMillis;
-    return true;
-  }
-  return false;
-}
+// boolean runEvery(unsigned long interval)
+// {
+//   static unsigned long previousMillis = 0;
+//   unsigned long currentMillis = millis();
+//   if (currentMillis - previousMillis >= interval)
+//   {
+//     previousMillis = currentMillis;
+//     return true;
+//   }
+//   return false;
+// }
 
