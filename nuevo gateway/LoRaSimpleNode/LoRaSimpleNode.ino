@@ -39,7 +39,14 @@
 String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
-byte id=0x00;
+byte id=0x00;       // id del nodo
+
+struct NodeInfo{
+  String id;
+  String value;
+};
+
+struct NodeInfo node;
 
 void setup() {
   Serial.begin(115200);                   // initialize serial
@@ -65,22 +72,16 @@ void setup() {
   LoRa_rxMode();
 }
 
-void cbk(int packetSize) {
-  packet ="";
-  packSize = String(packetSize,DEC);
-  for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
-  rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
-  Serial.println(packet);
-  delay(10);
-  LoRa_txMode();
-  LoRa_sendMessage("Hola, soy un nodo");
-  LoRa_rxMode();
-}
-
+int count=0;
 void loop() {
+  node.value=count;
   int packetSize = LoRa.parsePacket();
-  if (packetSize) { cbk(packetSize);  }
+  if (packetSize) { 
+    readMessage(packetSize);  
+  }
   delay(10);
+  
+  count++;
 }
 
 void LoRa_rxMode(){
@@ -100,19 +101,23 @@ void LoRa_sendMessage(String message) {
   LoRa.endPacket(true);                 // finish packet and send it
 }
 
-void onReceive(int packetSize) {
-  String message = "";
-
-  while (LoRa.available()) {
-    message += (char)LoRa.read();
+void readMessage(int packetSize) {
+  packet ="";
+  packSize = String(packetSize,DEC);
+  for (int i = 0; i < packetSize; i++) { 
+    packet += (char) LoRa.read(); 
   }
-
-  // Serial.print("Node Receive: ");
-  Serial.println(message);
-}
-
-void onTxDone() {
-  Serial.println("TxDone");
+  rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
+  Serial.println(packet);
+  delay(10);
+  String destination=packet.substring(0,1);
+  if (destination==node.id){
+      String message= node.id+node.value;
+      LoRa_txMode();
+      LoRa_sendMessage(message);
+  }
+ 
+  //LoRa_sendMessage(nodo.value);
   LoRa_rxMode();
 }
 
