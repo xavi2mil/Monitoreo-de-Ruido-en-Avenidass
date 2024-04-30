@@ -14,38 +14,47 @@
 #define BAND    915E6
 
 
+// EspMQTTClient client(
+//   SSID,
+//   PASSWORD,
+//   MQTT_IP,  // MQTT Broker server ip
+//   // "MQTTUsername",   // Can be omitted if not needed
+//   // "MQTTPassword",   // Can be omitted if not needed
+//   "Sonometro2",     // Client name that uniquely identify your device
+//   MQTT_PORT              // The MQTT port, default to 1883. this line can be omitted
+// );
 EspMQTTClient client(
-  SSID,
-  PASSWORD,
-  MQTT_IP,  // MQTT Broker server ip
+  "W308-rep",
+  "W308-internet",
+  "172.17.76.13",  // MQTT Broker server ip
   // "MQTTUsername",   // Can be omitted if not needed
   // "MQTTPassword",   // Can be omitted if not needed
   "Sonometro2",     // Client name that uniquely identify your device
-  MQTT_PORT              // The MQTT port, default to 1883. this line can be omitted
+  1883              // The MQTT port, default to 1883. this line can be omitted
 );
 
 String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
-byte nodesId[] = {0x00,0x01, 0x02}; // Definir la direccion de los nodos. Maximo 4 nodos.
+// byte nodesId[] = {0x00,0x01, 0x02}; // Definir la direccion de los nodos. Maximo 4 nodos.
 
-struct NodeInfo{
-  String id;
-  String value;
-};
+// struct NodeInfo{
+//   String id;
+//   String value;
+// };
 
-struct NodeInfo nodes[sizeof(nodesId)];
+// struct NodeInfo nodes[sizeof(nodesId)];
 
-byte numNodes=sizeof(nodesId);
+// byte numNodes=sizeof(nodesId);
 
 void setup() {
+  delay(50);
   Serial.begin(115200);                   
   while (!Serial);
-  SPI.begin(SCK,MISO,MOSI,SS);
-  LoRa.setPins(SS, RST, DI0);
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
   client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overridded with enableHTTPWebUpdater("user", "password").
-  
+  SPI.begin(SCK,MISO,MOSI,SS);
+  LoRa.setPins(SS, RST, DI0);
   if (!LoRa.begin(BAND)) {
     Serial.println("LoRa init failed. Check your connections.");
     while (true);                       // if failed, do nothing
@@ -59,36 +68,63 @@ void setup() {
   Serial.println("Rx: invertIQ disable");
   Serial.println();
 
-  //LoRa.onReceive(onReceive);
-  //LoRa.onTxDone(onTxDone);
+  // LoRa.onReceive(onReceive);
+  // LoRa.onTxDone(onTxDone);
   LoRa_rxMode();
-  for (byte i=0;i<numNodes;i++){
-    nodes[i].id=nodesId[i];
-  }
+  // for (byte i=0;i<numNodes;i++){
+  //   nodes[i].id=nodesId[i];
+  // }
+  delay(1500);
 }
 
-void loop() {
-  int packetSize=0;
 
-  if (runEvery(1000)) { // repeat every 1000 millis
-    for(byte i =0;numNodes;i++){
-      String destination=nodes[i].id;
-      String message= destination+"send data";
-      sendMessage(message);
+void loop() {
+  client.loop();
+  if (runEvery(1000)){
+    for (byte i=0;i<10;i++){
+      sendMessage((String)i + "/Hola");
       unsigned long lastTime=millis();
-      do {
-        packetSize = LoRa.parsePacket();
-        if (packetSize) { readMessage(packetSize, i);  }
-        delay(10);
+      while((millis()-lastTime)<50);
+      LoRa_rxMode();
+      while(true){
+        int packetSize = LoRa.parsePacket();
+        if (packetSize) { 
+          readMessage(packetSize);  
+          break;
+        }
+        if((millis()-lastTime)>200){
+          Serial.println("Nan");
+          // Serial.println(lastTime);
+          // Serial.println(millis());
+          break;
+        }
       }
-      while((millis()-lastTime)<200||packetSize);// intenta leer el mensaje del nodo  por hasta 200 ms 
-      if (!packetSize){
-        nodes[i].value="Nan";
-      }
+    
     }
-    sendMqttBroker();
+
 
   }
+  // int packetSize=0;
+
+  // if (runEvery(1000)) { // repeat every 1000 millis
+  //   for(byte i =0;numNodes;i++){
+  //     String destination=nodes[i].id;
+  //     String message= destination+"send data";
+  //     sendMessage(message);
+  //     unsigned long lastTime=millis();
+  //     do {
+  //       packetSize = LoRa.parsePacket();
+  //       if (packetSize) { readMessage(packetSize, i);  }
+  //       delay(10);
+  //     }
+  //     while((millis()-lastTime)<200||packetSize);// intenta leer el mensaje del nodo  por hasta 200 ms 
+  //     if (!packetSize){
+  //       nodes[i].value="Nan";
+  //     }
+  //   }
+  //   sendMqttBroker();
+
+  // }
 
   // LoRa.enableInvertIQ(); 
   // LoRa.receive();
@@ -111,17 +147,19 @@ void sendMessage(String message) {
   LoRa.endPacket(true);                 // finish packet and send it
 }
 
-void readMessage(int packetSize, int node) {
+void readMessage(int packetSize) {
   packet ="";
   packSize = String(packetSize,DEC);
-  String origin = (String)LoRa.read();
-  String destination=nodes[node].value;
-  for (int i = 0; i < packetSize-1; i++) { packet += (char) LoRa.read(); }
+//   String origin = (String)LoRa.read();
+//   String destination=nodes[node].value;
+  for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
   rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
+//   Serial.println(packet);
+//   if (destination == origin){
+//     nodes[node].value=packet;
+//   }
+
   Serial.println(packet);
-  if (destination == origin){
-    nodes[node].value=packet;
-  }
 }
 
 boolean runEvery(unsigned long interval)
@@ -136,21 +174,20 @@ boolean runEvery(unsigned long interval)
   return false;
 }
 
-void sendMqttBroker() {
-  // Enviar información de todos los nodos a la función sendMqttBroker
-  // for (int i = 0; i < numNodes; i++) {
-  //   byte id = nodes[i].id;
-  //   String topic = "avSanPablo/sensor"+id+"/leq";
-  //   client.publish(topic, nodes[i].value);
-  // }
-  for (int i=0;i<numNodes; i++){
-    Serial.print("nodeId = "+nodes[i].id);
-    Serial.println("  nodeValue = "+nodes[i].value);
-  }
-}
+// void sendMqttBroker() {
+//   // Enviar información de todos los nodos a la función sendMqttBroker
+//   // for (int i = 0; i < numNodes; i++) {
+//   //   byte id = nodes[i].id;
+//   //   String topic = "avSanPablo/sensor"+id+"/leq";
+//   //   client.publish(topic, nodes[i].value);
+//   // }
+//   for (int i=0;i<numNodes; i++){
+//     Serial.print("nodeId = "+nodes[i].id);
+//     Serial.println("  nodeValue = "+nodes[i].value);
+//   }
+// }
 
-void onConnectionEstablished()
-{
+void onConnectionEstablished(){
   Serial.println("Conexion establecida");
 
 }

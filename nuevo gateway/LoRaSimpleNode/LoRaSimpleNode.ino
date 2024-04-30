@@ -72,16 +72,22 @@ void setup() {
   LoRa_rxMode();
 }
 
-int count=0;
+
 void loop() {
-  node.value=count;
+
   int packetSize = LoRa.parsePacket();
   if (packetSize) { 
-    readMessage(packetSize);  
+    readMessage(packetSize);
+    //Serial.println(packet);
+    unsigned long lastTime=millis();
+    while((millis()-lastTime)<50);
+    LoRa_sendMessage("count");
+    lastTime=millis();
+    while((millis()-lastTime)<30);
+    LoRa_rxMode();
   }
-  delay(10);
+ 
   
-  count++;
 }
 
 void LoRa_rxMode(){
@@ -104,21 +110,16 @@ void LoRa_sendMessage(String message) {
 void readMessage(int packetSize) {
   packet ="";
   packSize = String(packetSize,DEC);
-  for (int i = 0; i < packetSize; i++) { 
-    packet += (char) LoRa.read(); 
-  }
+//   String origin = (String)LoRa.read();
+//   String destination=nodes[node].value;
+  for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
   rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
+//   Serial.println(packet);
+//   if (destination == origin){
+//     nodes[node].value=packet;
+//   }
+  // Serial.println(rssi);
   Serial.println(packet);
-  delay(10);
-  String destination=packet.substring(0,1);
-  if (destination==node.id){
-      String message= node.id+node.value;
-      LoRa_txMode();
-      LoRa_sendMessage(message);
-  }
- 
-  //LoRa_sendMessage(nodo.value);
-  LoRa_rxMode();
 }
 
 // boolean runEvery(unsigned long interval)
