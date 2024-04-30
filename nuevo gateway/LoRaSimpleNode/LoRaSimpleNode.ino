@@ -40,6 +40,7 @@ String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
 byte id=0x00;       // id del nodo
+byte destination;
 
 struct NodeInfo{
   String id;
@@ -47,6 +48,7 @@ struct NodeInfo{
 };
 
 struct NodeInfo node;
+
 
 void setup() {
   Serial.begin(115200);                   // initialize serial
@@ -70,6 +72,7 @@ void setup() {
   //LoRa.onReceive(onReceive);
   //LoRa.onTxDone(onTxDone);
   LoRa_rxMode();
+  node.id="1";
 }
 
 
@@ -80,8 +83,8 @@ void loop() {
     readMessage(packetSize);
     //Serial.println(packet);
     unsigned long lastTime=millis();
-    while((millis()-lastTime)<50);
-    LoRa_sendMessage("count");
+    while((millis()-lastTime)<70);
+    LoRa_sendMessage(node.id+"/45.54");
     lastTime=millis();
     while((millis()-lastTime)<30);
     LoRa_rxMode();
@@ -112,13 +115,15 @@ void readMessage(int packetSize) {
   packSize = String(packetSize,DEC);
 //   String origin = (String)LoRa.read();
 //   String destination=nodes[node].value;
-  for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
+  destination=LoRa.read();
+  for (int i = 0; i < packetSize-1; i++) { packet += (char) LoRa.read(); }
   rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
 //   Serial.println(packet);
 //   if (destination == origin){
 //     nodes[node].value=packet;
 //   }
   // Serial.println(rssi);
+  Serial.printf("Destination: %c\t", (char) destination);
   Serial.println(packet);
 }
 

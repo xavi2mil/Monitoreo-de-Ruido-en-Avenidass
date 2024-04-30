@@ -81,7 +81,7 @@ void setup() {
 void loop() {
   client.loop();
   if (runEvery(1000)){
-    for (byte i=0;i<10;i++){
+    for (byte i=0;i<4;i++){
       sendMessage((String)i + "/Hola");
       unsigned long lastTime=millis();
       while((millis()-lastTime)<50);
