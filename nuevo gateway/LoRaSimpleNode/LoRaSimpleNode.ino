@@ -36,14 +36,12 @@
 #define DI0     26   // GPIO26 -- IRQ(Interrupt Request)
 #define BAND    915E6
 
-String rssi = "RSSI --";
-String packSize = "--";
+// String rssi = "RSSI --";
+// String packSize = "--";
 String packet ;
-byte id=0x00;       // id del nodo
-byte destination;
-
+byte id=0x1;       // id del nodo
 struct NodeInfo{
-  String id;
+  byte id;
   String value;
 };
 
@@ -72,9 +70,11 @@ void setup() {
   //LoRa.onReceive(onReceive);
   //LoRa.onTxDone(onTxDone);
   LoRa_rxMode();
-  node.id="1";
+  node.id=id;
+  Serial.println(node.id);
 }
 
+int count=0;
 
 void loop() {
 
@@ -82,14 +82,15 @@ void loop() {
   if (packetSize) { 
     readMessage(packetSize);
     //Serial.println(packet);
-    unsigned long lastTime=millis();
-    while((millis()-lastTime)<70);
-    LoRa_sendMessage(node.id+"/45.54");
-    lastTime=millis();
-    while((millis()-lastTime)<30);
-    LoRa_rxMode();
+    // unsigned long lastTime=millis();
+    // while((millis()-lastTime)<70);
+    if (packet==(String)node.id){
+      LoRa_sendMessage((String)count);
+      LoRa_rxMode();
+    }
+    count++;
   }
- 
+  
   
 }
 
@@ -107,24 +108,22 @@ void LoRa_sendMessage(String message) {
   LoRa_txMode();                        // set tx mode
   LoRa.beginPacket();                   // start packet
   LoRa.print(message);                  // add payload
-  LoRa.endPacket(true);                 // finish packet and send it
+  LoRa.endPacket(false);                 // finish packet and send it
 }
 
 void readMessage(int packetSize) {
   packet ="";
-  packSize = String(packetSize,DEC);
+  // packSize = String(packetSize,DEC);
 //   String origin = (String)LoRa.read();
 //   String destination=nodes[node].value;
-  destination=LoRa.read();
-  for (int i = 0; i < packetSize-1; i++) { packet += (char) LoRa.read(); }
-  rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
+  for (int i = 0; i < packetSize; i++) { packet +=  LoRa.read(); }
+  // rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
 //   Serial.println(packet);
 //   if (destination == origin){
 //     nodes[node].value=packet;
 //   }
   // Serial.println(rssi);
-  Serial.printf("Destination: %c\t", (char) destination);
-  Serial.println(packet);
+  //Serial.println((String)packet);
 }
 
 // boolean runEvery(unsigned long interval)

@@ -56,7 +56,13 @@ String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
 
+String id = "1";
 
+struct NodeInfo{
+  String id;
+  String value;
+};
+struct NodeInfo node;
 //
 // Configuration
 //
@@ -391,6 +397,8 @@ void setup() {
     Serial.println("Starting LoRa failed!");
     while (1);
   }
+  LoRa_rxMode();
+  node.id=id;
 ////////////////////////////////////////////////LORA
   // Create FreeRTOS queue
   samples_queue = xQueueCreate(8, sizeof(sum_queue_t));
@@ -434,13 +442,23 @@ void setup() {
       
       // Serial output, customize (or remove) as needed
       Serial.printf("%.1f\n", Leq_dB);
-      LoRa.beginPacket();
-      LoRa.print(Leq_dB);
-      LoRa.endPacket();
+      // LoRa.beginPacket();
+      // LoRa.print(Leq_dB);
+      // LoRa.endPacket();
       // Debug only
       //Serial.printf("%u processing ticks\n", q.proc_ticks);
     }
-    // send packet
+    int packetSize = LoRa.parsePacket();
+    if (packetSize) { 
+      readMessage(packetSize);
+      //Serial.println(packet);
+      // unsigned long lastTime=millis();
+      // while((millis()-lastTime)<70);
+      if (packet==node.id){
+        LoRa_sendMessage((String)Leq_dB+"/"+node.id);
+      }
+      LoRa_rxMode();
+    }
     
     #if (USE_DISPLAY > 0)
 
@@ -481,3 +499,24 @@ void setup() {
 void loop() {
   // Nothing here..
 }
+void LoRa_rxMode(){
+  LoRa.enableInvertIQ();                // active invert I and Q signals
+  LoRa.receive();                       // set receive mode
+}
+
+void LoRa_txMode(){
+  LoRa.idle();                          // set standby mode
+  LoRa.disableInvertIQ();               // normal mode
+}
+
+void LoRa_sendMessage(String message) {
+  LoRa_txMode();                        // set tx mode
+  LoRa.beginPacket();                   // start packet
+  LoRa.print(message);                  // add payload
+  LoRa.endPacket(false);                 // finish packet and send it
+}
+void readMessage(int packetSize) {
+  packet ="";
+  for (int i = 0; i < packetSize; i++) { packet +=  LoRa.read(); }
+}
+
