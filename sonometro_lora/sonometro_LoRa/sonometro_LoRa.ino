@@ -55,7 +55,7 @@
 String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
-
+double value=0;
 String id = "1";
 
 struct NodeInfo{
@@ -368,6 +368,21 @@ void mic_i2s_reader_task(void* parameter) {
   }
 }
 
+// Tarea para leer los mensajes del LoRa_gateway y mandar la informacion
+void LoRa_onReceive(void *parameter) {
+  while (true) {
+    int packetSize = LoRa.parsePacket();
+    if (packetSize) { 
+      readMessage(packetSize);
+      if (packet == node.id) {
+        LoRa_sendMessage((String)value);
+      }
+      LoRa_rxMode();
+    }
+    // Dormir durante un breve período para evitar sobrecargar el procesador
+    delay(10);
+  }
+}
 //
 // Setup and main loop 
 //
@@ -408,8 +423,23 @@ void setup() {
   //       automatically to the first core it happens to run on
   //       (due to using the hardware FPU instructions).
   //       For manual control see: xTaskCreatePinnedToCore
-  xTaskCreate(mic_i2s_reader_task, "Mic I2S Reader", I2S_TASK_STACK, NULL, I2S_TASK_PRI, NULL);
-
+  xTaskCreatePinnedToCore(
+    mic_i2s_reader_task, 
+    "Mic I2S Reader", 
+    I2S_TASK_STACK, 
+    NULL, 
+    I2S_TASK_PRI, 
+    NULL,
+    1);
+  xTaskCreatePinnedToCore(
+    LoRa_onReceive,            // Función de la tarea
+    "LoRaTask",                // Nombre de la tarea
+    4096,                      // Tamaño del stack de la tarea
+    NULL,                      // Parámetro de entrada de la tarea
+    3,                         // Prioridad de la tarea (0 es la más baja)
+    NULL,                      // Manejador de la tarea
+    0                          // Núcleo en el que se ejecutará la tarea (0 o 1)
+  );
   sum_queue_t q;
   uint32_t Leq_samples = 0;
   double Leq_sum_sqr = 0;
@@ -447,18 +477,9 @@ void setup() {
       // LoRa.endPacket();
       // Debug only
       //Serial.printf("%u processing ticks\n", q.proc_ticks);
+      value=Leq_dB;
     }
-    int packetSize = LoRa.parsePacket();
-    if (packetSize) { 
-      readMessage(packetSize);
-      //Serial.println(packet);
-      // unsigned long lastTime=millis();
-      // while((millis()-lastTime)<70);
-      if (packet==node.id){
-        LoRa_sendMessage((String)Leq_dB+"/"+node.id);
-      }
-      LoRa_rxMode();
-    }
+
     
     #if (USE_DISPLAY > 0)
 
@@ -517,6 +538,6 @@ void LoRa_sendMessage(String message) {
 }
 void readMessage(int packetSize) {
   packet ="";
-  for (int i = 0; i < packetSize; i++) { packet +=  LoRa.read(); }
+  for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
 }
 

@@ -38,16 +38,15 @@ String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
 
-byte nodesId[] = {0x01,0x2}; // Definir la direccion de los nodos. Maximo 4 nodos.
+String nodesId[] = {"1","2", "3"}; // Definir la direccion de los nodos. Maximo 4 nodos.
 
 struct NodeInfo{
-  byte id;
+  String id;
   String value;
 };
 
-struct NodeInfo nodes[sizeof(nodesId)];
-
-int numNodes=sizeof(nodesId);
+int numNodes=(sizeof(nodesId)/sizeof(nodesId[0]));
+struct NodeInfo nodes[sizeof(nodesId)/sizeof(nodesId[0])];
 
 void printScreen(){
   display.clear();
@@ -61,6 +60,7 @@ void printScreen(){
   else{
     display.drawRect(120, 2, 8, 8);
   }
+  // display.drawString(int16_t x, int16_t y, String text);
   //display.drawStringMaxWidth(0 , 26 , 128, packet);
   //display.drawString(0, 0, rssi);
 
@@ -99,6 +99,7 @@ void setup() {
   display.init();
   display.flipScreenVertically();  
   display.setFont(ArialMT_Plain_10);
+  
   for (int i=0;i<numNodes;i++){
     nodes[i].id=nodesId[i];
   }
@@ -114,7 +115,7 @@ void loop() {
   }
   else if (runEvery(1000)){
     for (int i=0;i<numNodes;i++){
-      sendByte(nodes[i].id);
+      sendMessage(nodes[i].id);
       unsigned long lastTime=millis();
       // while((millis()-lastTime)<50);
       LoRa_rxMode();
@@ -125,7 +126,7 @@ void loop() {
           nodes[i].value = packet;
           break;
         }
-        if((millis()-lastTime)>500){
+        if((millis()-lastTime)>(900/numNodes)){
           //Serial.println("nan");
           // Serial.println(lastTime);
           // Serial.println(millis());
@@ -215,14 +216,14 @@ boolean runEvery(unsigned long interval)
   }
   return false;
 }
-
+// Enviar información de todos los nodos al broker MQTT
 void sendMqttBroker() {
-  // Enviar información de todos los nodos a la función sendMqttBroker
-  // for (int i = 0; i < numNodes; i++) {
-  //   byte id = nodes[i].id;
-  //   String topic = "avSanPablo/sensor"+id+"/leq";
-  //   client.publish(topic, nodes[i].value);
-  // }
+  // 
+  for (int i = 0; i < numNodes; i++) {
+    String id = nodes[i].id;
+    String topic = "avSanPablo/sensor"+id+"/leq";
+    client.publish(topic, nodes[i].value);
+  }
   for (int i=0;i<numNodes; i++){
     Serial.print("nodeId = "+ (String)nodes[i].id);
     Serial.println("  nodeValue = "+ nodes[i].value);
