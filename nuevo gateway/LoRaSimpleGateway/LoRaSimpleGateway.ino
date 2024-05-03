@@ -24,21 +24,24 @@ EspMQTTClient client(
   "Gateway",     // Client name that uniquely identify your device
   MQTT_PORT              // The MQTT port, default to 1883. this line can be omitted
 );
-// EspMQTTClient client(
-//   "W308-rep",
-//   "W308-internet",
-//   "172.17.76.13",  // MQTT Broker server ip
-//   // "MQTTUsername",   // Can be omitted if not needed
-//   // "MQTTPassword",   // Can be omitted if not needed
-//   "Sonometro2",     // Client name that uniquely identify your device
-//   1883              // The MQTT port, default to 1883. this line can be omitted
-// );
+
 SSD1306 display(0x3c, 21, 22);
 String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
+/* cambiar el arreglo de direcciones por valores enteros.
+ el gateway debe de verificar que el mensaje recivido del nodo tenga el formato json, 
+ de lo contrario debe de pedir la informacion nuevamente.  
+ Se debe de implementar un timeout para el caso en el que el nodo no este encendido. 
+ y otro tiempo de espera de recepcion de mensaje, si este tiempo se supera y no hay respuesta 
+ se vuelve a enviar el mensaje de solicitud de datos. en caso de no tener respuesta el gateway pide 
+ informacion al siguiente nodo que este registrado.
 
-String nodesId[] = {"1","2", "3"}; // Definir la direccion de los nodos. Maximo 4 nodos.
+ el gateway debe de asegurarse que la informacion que envia al broker tenga el formato adecuado, 
+ debe de añadir el timestamp a cada medicion tomando en cuenta que cada meidcion tiene de diferencia 1 segundo
+
+ */
+String nodesId[] = {"1","2"}; // Definir la direccion de los nodos. Maximo 4 nodos.
 
 struct NodeInfo{
   String id;
