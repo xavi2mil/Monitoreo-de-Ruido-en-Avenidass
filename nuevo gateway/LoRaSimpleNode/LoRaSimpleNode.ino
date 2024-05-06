@@ -1,29 +1,3 @@
-/*
-  LoRa Simple Gateway/Node Exemple
-
-  This code uses InvertIQ function to create a simple Gateway/Node logic.
-
-  Gateway - Sends messages with enableInvertIQ()
-          - Receives messages with disableInvertIQ()
-
-  Node    - Sends messages with disableInvertIQ()
-          - Receives messages with enableInvertIQ()
-
-  With this arrangement a Gateway never receive messages from another Gateway
-  and a Node never receive message from another Node.
-  Only Gateway to Node and vice versa.
-
-  This code receives messages and sends a message every second.
-
-  InvertIQ function basically invert the LoRa I and Q signals.
-
-  See the Semtech datasheet, http://www.semtech.com/images/datasheet/sx1276.pdf
-  for more on InvertIQ register 0x33.
-
-  created 05 August 2018
-  by Luiz H. Cassettari
-*/
-
 #include <SPI.h>              // include libraries
 #include <LoRa.h>
 #include <Wire.h>
@@ -38,13 +12,14 @@
 
 // String rssi = "RSSI --";
 // String packSize = "--";
+String id = "1";
+
 String packet ;
-byte id=0x1;       // id del nodo
+
 struct NodeInfo{
-  byte id;
+  String id;
   String value;
 };
-
 struct NodeInfo node;
 
 
@@ -58,6 +33,10 @@ void setup() {
     Serial.println("LoRa init failed. Check your connections.");
     while (true);                       // if failed, do nothing
   }
+  LoRa.setSignalBandwidth(125E3);
+  LoRa.setSpreadingFactor(7);
+  LoRa.setCodingRate4(7);
+  LoRa.enableCrc();
 
   Serial.println("LoRa init succeeded.");
   Serial.println();
@@ -81,14 +60,15 @@ void loop() {
   int packetSize = LoRa.parsePacket();
   if (packetSize) { 
     readMessage(packetSize);
-    //Serial.println(packet);
+    Serial.println(packet);
     // unsigned long lastTime=millis();
     // while((millis()-lastTime)<70);
     if (packet==(String)node.id){
       LoRa_sendMessage((String)count);
       LoRa_rxMode();
+      count++;
     }
-    count++;
+    
   }
   
   
@@ -116,7 +96,7 @@ void readMessage(int packetSize) {
   // packSize = String(packetSize,DEC);
 //   String origin = (String)LoRa.read();
 //   String destination=nodes[node].value;
-  for (int i = 0; i < packetSize; i++) { packet +=  LoRa.read(); }
+  for (int i = 0; i < packetSize; i++) { packet +=  (char)LoRa.read(); }
   // rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
 //   Serial.println(packet);
 //   if (destination == origin){

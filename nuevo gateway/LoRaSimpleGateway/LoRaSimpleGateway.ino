@@ -24,52 +24,22 @@ EspMQTTClient client(
   "Gateway",     // Client name that uniquely identify your device
   MQTT_PORT              // The MQTT port, default to 1883. this line can be omitted
 );
-// EspMQTTClient client(
-//   "W308-rep",
-//   "W308-internet",
-//   "172.17.76.13",  // MQTT Broker server ip
-//   // "MQTTUsername",   // Can be omitted if not needed
-//   // "MQTTPassword",   // Can be omitted if not needed
-//   "Sonometro2",     // Client name that uniquely identify your device
-//   1883              // The MQTT port, default to 1883. this line can be omitted
-// );
+
 SSD1306 display(0x3c, 21, 22);
 String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
 
-String nodesId[] = {"1","2", "3"}; // Definir la direccion de los nodos. Maximo 4 nodos.
+const int numNodes=4;
+String nodesId[] = {"1", "2", "3", "4"}; // Definir la direccion, de un caracter, de los nodos. Máximo 4 nodos.
 
 struct NodeInfo{
   String id;
   String value;
 };
 
-int numNodes=(sizeof(nodesId)/sizeof(nodesId[0]));
-struct NodeInfo nodes[sizeof(nodesId)/sizeof(nodesId[0])];
+struct NodeInfo nodes[numNodes];
 
-void printScreen(){
-  display.clear();
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.setFont(ArialMT_Plain_10);
-  // display.drawString(0 , 15 , "Received "+ packSize + " bytes");
-  display.drawString(0, 0, "Conexion WIFI/MQTT");
-  if (client.isConnected()){
-    display.fillRect(120, 2, 8, 8);
-  }
-  else{
-    display.drawRect(120, 2, 8, 8);
-  }
-  // display.drawString(int16_t x, int16_t y, String text);
-  //display.drawStringMaxWidth(0 , 26 , 128, packet);
-  //display.drawString(0, 0, rssi);
-
-  // display.drawString(0, 40, "wifi:" + conexionWifi);
-  // display.drawString(0, 50, "MQTT:"+ conexionMQTT);
-  display.display();
-  //Serial.println(rssi);
-  //Serial.println(packet);
-}
 
 void setup() {
   delay(50);
@@ -77,22 +47,26 @@ void setup() {
   Serial.begin(115200);                   
   while (!Serial);
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overridded with enableHTTPWebUpdater("user", "password").
+  client.enableHTTPWebUpdater(); 
   SPI.begin(SCK,MISO,MOSI,SS);
   LoRa.setPins(SS, RST, DI0);
   if (!LoRa.begin(BAND)) {
     Serial.println("LoRa init failed. Check your connections.");
-    while (true);                       // if failed, do nothing
+    while (true);
   }
+
+  LoRa.setSignalBandwidth(125E3);
+  LoRa.setSpreadingFactor(7);
+  LoRa.setCodingRate4(7);
+  LoRa.enableCrc();
 
   Serial.println("LoRa init succeeded.");
   Serial.println();
-  Serial.println("LoRa Simple Gateway");
+  Serial.println("LoRa Gateway");
   Serial.println("Only receive messages from nodes");
   Serial.println("Tx: invertIQ enable");
   Serial.println("Rx: invertIQ disable");
   Serial.println();
-
   // LoRa.onReceive(onReceive);
   // LoRa.onTxDone(onTxDone);
   LoRa_rxMode();
@@ -117,7 +91,6 @@ void loop() {
     for (int i=0;i<numNodes;i++){
       sendMessage(nodes[i].id);
       unsigned long lastTime=millis();
-      // while((millis()-lastTime)<50);
       LoRa_rxMode();
       while(true){
         int packetSize = LoRa.parsePacket();
@@ -127,43 +100,15 @@ void loop() {
           break;
         }
         if((millis()-lastTime)>(900/numNodes)){
-          //Serial.println("nan");
-          // Serial.println(lastTime);
-          // Serial.println(millis());
-          nodes[i].value="nan";
+          nodes[i].value="NaN";
           break;
         }
       }
     
     }
     sendMqttBroker();
-
   }
   
-  // int packetSize=0;
-
-  // if (runEvery(1000)) { // repeat every 1000 millis
-  //   for(byte i =0;numNodes;i++){
-  //     String destination=nodes[i].id;
-  //     String message= destination+"send data";
-  //     sendMessage(message);
-  //     unsigned long lastTime=millis();
-  //     do {
-  //       packetSize = LoRa.parsePacket();
-  //       if (packetSize) { readMessage(packetSize, i);  }
-  //       delay(10);
-  //     }
-  //     while((millis()-lastTime)<200||packetSize);// intenta leer el mensaje del nodo  por hasta 200 ms 
-  //     if (!packetSize){
-  //       nodes[i].value="Nan";
-  //     }
-  //   }
-  //   sendMqttBroker();
-
-  // }
-
-  // LoRa.enableInvertIQ(); 
-  // LoRa.receive();
 }
 
 void LoRa_rxMode(){
@@ -176,13 +121,6 @@ void LoRa_txMode(){
   LoRa.enableInvertIQ();                // active invert I and Q signals
 }
 
-void sendByte(byte nodeId){
-  LoRa_txMode();                        // set tx mode
-  LoRa.beginPacket();                   // start packet
-  LoRa.write(nodeId);                  // add payload
-  LoRa.endPacket(false);                 // finish packet and send it
-}
-
 void sendMessage(String message) {
   LoRa_txMode();                        // set tx mode
   LoRa.beginPacket();                   // start packet
@@ -193,8 +131,6 @@ void sendMessage(String message) {
 void readMessage(int packetSize) {
   packet ="";
   packSize = String(packetSize,DEC);
-//   String origin = (String)LoRa.read();
-//   String destination=nodes[node].value;
   for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
   // rssi = "RSSI " + String(LoRa.packetRssi(), DEC) ;
 //   Serial.println(packet);
@@ -233,6 +169,34 @@ void sendMqttBroker() {
 void onConnectionEstablished(){
   Serial.println("Conexion establecida");
 
+}
+void printScreen(){
+  display.clear();
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setFont(ArialMT_Plain_10);
+  // display.drawString(0 , 15 , "Received "+ packSize + " bytes");
+  display.drawString(0, 0, "Conexion WIFI/MQTT");
+  if (client.isConnected()){
+    display.fillRect(120, 2, 8, 8);
+  }
+  else{
+    display.drawRect(120, 2, 8, 8);
+  }
+  display.drawString(0, 15, "Nodos");
+  display.drawString(40, 15, "Valor");
+  for(int i=0;i<numNodes;i++){
+    display.drawString(0, 18+8*(i+1), nodes[i].id);
+    display.drawString(40, 18+8*(i+1),nodes[i].value );
+  }
+  // display.drawString(int16_t x, int16_t y, String text);
+  //display.drawStringMaxWidth(0 , 26 , 128, packet);
+  //display.drawString(0, 0, rssi);
+
+  // display.drawString(0, 40, "wifi:" + conexionWifi);
+  // display.drawString(0, 50, "MQTT:"+ conexionMQTT);
+  display.display();
+  //Serial.println(rssi);
+  //Serial.println(packet);
 }
 
 
