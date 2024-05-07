@@ -374,13 +374,15 @@ void LoRa_onReceive(void *parameter) {
     int packetSize = LoRa.parsePacket();
     if (packetSize) { 
       readMessage(packetSize);
+      Serial.println(packet);
       if (packet == node.id) {
         LoRa_sendMessage((String)value);
+
       }
       LoRa_rxMode();
     }
+    delay(5);
     // Dormir durante un breve período para evitar sobrecargar el procesador
-    delay(10);
   }
 }
 //
@@ -412,6 +414,10 @@ void setup() {
     Serial.println("Starting LoRa failed!");
     while (1);
   }
+  LoRa.setSignalBandwidth(125E3);
+  LoRa.setSpreadingFactor(7);
+  LoRa.setCodingRate4(7);
+  LoRa.enableCrc();
   LoRa_rxMode();
   node.id=id;
 ////////////////////////////////////////////////LORA
@@ -510,6 +516,7 @@ void setup() {
       
       // The Leq numeric decibels
       display.drawString(0, 4, String(Leq_dB, 1) + " " + DB_UNITS);
+      display.drawString(0, 20, "Nodo "+node.id);
       
       display.display();
       

@@ -30,8 +30,8 @@ String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
 
-const int numNodes=4;
-String nodesId[] = {"1", "2", "3", "4"}; // Definir la direccion, de un caracter, de los nodos. Máximo 4 nodos.
+const int numNodes=2;
+String nodesId[] = {"1", "2"}; // Definir la direccion, de un caracter, de los nodos. Máximo 4 nodos.
 
 struct NodeInfo{
   String id;
@@ -89,8 +89,9 @@ void loop() {
   }
   else if (runEvery(1000)){
     for (int i=0;i<numNodes;i++){
-      sendMessage(nodes[i].id);
       unsigned long lastTime=millis();
+      while(millis()-lastTime<20); //Espera 20 milisegundos antes de enviar el siguente mensaje
+      sendMessage(nodes[i].id);
       LoRa_rxMode();
       while(true){
         int packetSize = LoRa.parsePacket();
