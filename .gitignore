@@ -12,3 +12,4 @@
 *.txt
 *.yaml
 config.h
+.vscode
