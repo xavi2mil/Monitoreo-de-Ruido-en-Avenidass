@@ -1,43 +1,3 @@
-/*
- * Display A-weighted sound level measured by I2S Microphone
- * 
- * (c)2019 Ivan Kostoski
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *    
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-/*
- * Sketch samples audio data from I2S microphone, processes the data 
- * with digital IIR filters and calculates A or C weighted Equivalent 
- * Continuous Sound Level (Leq)
- * 
- * I2S is setup to sample data at Fs=48000KHz (fixed value due to 
- * design of digital IIR filters). Data is read from I2S queue 
- * in 'sample blocks' (default 125ms block, equal to 6000 samples) 
- * by 'i2s_reader_task', filtered trough two IIR filters (equalizer 
- * and weighting), summed up and pushed into 'samples_queue' as 
- * sum of squares of filtered samples. The main task then pulls data 
- * from the queue and calculates decibel value relative to microphone 
- * reference amplitude, derived from datasheet sensitivity dBFS 
- * value, number of bits in I2S data, and the reference value for 
- * which the sensitivity is specified (typically 94dB, pure sine
- * wave at 1KHz).
- * 
- * Displays line on the small OLED screen with 'short' LAeq(125ms)
- * response and numeric LAeq(1sec) dB value from the signal RMS.
- */
-
 #include <driver/i2s.h>
 #include "sos-iir-filter.h"
 // lora
@@ -55,28 +15,20 @@
 #define DI0     26   // GPIO26 -- IRQ(Interrupt Request)
 #define BAND    915E6
 
-String rssi = "RSSI --";
-String packSize = "--";
-String packet ;
-String jsonValues="";
-double leq_1s=0;
-int id = 1;
+// informacion y configuracion del nodo
+const u_int8_t nodeId = 1;    // identificador del nodo
+int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas. 
+unsigned long startTime=0; // Inicio tiempo de medicion
+unsigned long stopTime=0; // Final de tiempo de medicion
+int period=1;           // Tiempo de expocision o periodo 
+String jsonMeasurements=""; // json con las mediciones
+String lastJsonMeasurements=""; // json con las mediciones anteriores
+String jsonNodeInfo = "";   // json con la informacion del nodo
+float vBatt=0;            // Voltaje de la batería
 const uint8_t vbatPin = 35;
-struct NodeInfo{
-  int id;
-  int period;
-  float battery;
-  unsigned long startTime;
-  unsigned long stopTime;
-  String jsonValues="";
-  String jsonInfo="";
-};
-struct NodeInfo node;
-ESP32Time rtc(-21600);
+double leq_1s;          // Valor equivalente de un segundo 
 
-//
-// Configuration
-//
+ESP32Time rtc(0);  // rtc UTC-6
 
 #define LEQ_PERIOD        1           // second(s)
 #define WEIGHTING         A_weighting // Also avaliable: 'C_weighting' or 'None' (Z_weighting)
@@ -126,7 +78,6 @@ constexpr double MIC_REF_AMPL = pow(10, double(MIC_SENSITIVITY)/20) * ((1<<(MIC_
   #define OLED_FLIP_V       1
   SSD1306Wire display(0x3c, SDA, SCL, OLED_GEOMETRY);
 #endif
-
 
 //
 // IIR Filters
@@ -321,7 +272,7 @@ void mic_i2s_init() {
   //rtc_clk_apll_enable(1, 149, 212, 5, 2);
 }
 
-//
+
 // I2S Reader Task
 //
 // Rationale for separate task reading I2S is that IIR filter
@@ -379,17 +330,18 @@ void mic_i2s_reader_task(void* parameter) {
   }
 }
 
-// Tarea para leer los mensajes del LoRa_gateway y mandar la informacion
 void LoRa_onReceive(void *parameter) {
+  String output;
   JsonDocument doc;
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  const TickType_t xDelay = pdMS_TO_TICKS(200); // Esperar 20 ms
+  const TickType_t xDelay = pdMS_TO_TICKS(20); // Esperar 20 ms
   LoRa_rxMode();
   while (true) {
     int packetSize = LoRa.parsePacket();
     if (packetSize) { 
-      readMessage(packetSize);
-      Serial.println(packet);
+      String packet ="";
+      for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
+      //Serial.println(packet);
       DeserializationError error = deserializeJson(doc, packet);
       if (error) {
         Serial.print("deserializeJson() failed: ");
@@ -397,97 +349,64 @@ void LoRa_onReceive(void *parameter) {
         // return;
       }
       else{
-        const char* command = doc["command"]; // "setTime"
-        //long arg = doc["arg"]; // 1715388115
-        int id = doc["nodeId"];
-        if (id==node.id||id==0){
-          if (String(command)=="setTime"){
+        String command = doc["command"];
+        u_int8_t destination = doc["nodeId"];
+        if (destination==nodeId||destination==0){
+          // Serial.print(command+" ");
+          // Serial.println(destination);
+          if(command=="setTime"){
             unsigned long time = doc["time"];
-            rtc.setTime(time); 
-            Serial.print("Tiempo establecido");
-            //Serial.println(String(rtc.getLocalEpoch()));
+            rtc.setTime(time);
+            Serial.print("Tiempo configurado  ");
+            Serial.println(rtc.getDateTime());
           }
-          else if(String(command)=="setConfig"){
-            int period = doc["period"];
-            unsigned long startTime = doc["startTime"];
-            unsigned long stopTime = doc["stopTime"];
-            node.period=period;
-            node.startTime=startTime;
-            node.stopTime=stopTime;
-            Serial.println("Configuracion establecida ");
+          else if(command=="setConfig"){
+            period=doc["period"];
+            numMeasurements=doc["numMeasurements"];
+            startTime=doc["startTime"];
+            stopTime=doc["stopTime"];
+            Serial.print("Configuracion establecida: ");
+            Serial.printf("Periodo: %d, Mediciones: %d, inicio: %d, fin: %d\n", period, numMeasurements, startTime, stopTime);
           }
-          else if (String(command)=="getValues"){
-            LoRa_sendValues();
-            //Serial.println("Mediciones enviadas")
+          else if(command=="getValues"){
+            // Serial.println("Enviando valores...");
+            if (jsonMeasurements==""){
+              Serial.println("No hay valores para enviar");
+            }
+            else{
+              LoRa_sendMessage(lastJsonMeasurements);
+              //lastJsonMeasurements=jsonMeasurements;
+              Serial.println("valores enviados");
+              delay(10);
+              LoRa_rxMode();
+            }
+            
           }
-          else if(String(command)=="getInfo"){
-            LoRa_sendInfo();
-            Serial.println("Informacion enviada");
+          else if(command=="getInfo"){
+              JsonDocument doc2;
+              doc2["starTime"]=startTime;
+              doc2["stopTime"]=stopTime;
+              vBatt=(float)(analogRead(vbatPin))/4095*2*3.3*1.1;
+              doc2["battery"]=vBatt;
+              doc2["period"]=period;
+              doc2["numMeasurements"]=numMeasurements;
+              doc2["nodeId"]=nodeId;
+              serializeJson(doc2, jsonNodeInfo);
+              LoRa_sendMessage(jsonNodeInfo);
+              delay(10);
+              LoRa_rxMode();
           }
-          else{
-
-          }
-        // Serial.println(packet);
-        // if (packet == node.id) {
-        //   LoRa_sendMessage((String)value);
-
-         }
-        //   LoRa_rxMode();
+        }
+        
       }
-      
     }
-    // if(node.jsonInfo!=""){
-    //   LoRa_sendMessage(node.jsonInfo);
-    //   node.jsonInfo="";
-    // }
-    // if(node.jsonValues!=""){
-    //   LoRa_sendMessage(node.jsonValues);
-    //   node.jsonValues="";
-    // }
-    LoRa_rxMode();
     vTaskDelayUntil(&xLastWakeTime, xDelay);
     // Dormir durante un breve período para evitar sobrecargar el procesador
   }
 }
 
-// Tarea para llenar el buffer de 10 mediciones de leq
-// y crear el string json
-void saveValues(void* parameter){
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-  const TickType_t xDelay = pdMS_TO_TICKS(1000); // Esperar 1000 ms
-  String output;
-  JsonDocument doc;
-  while(true){
-    doc["id"]=node.id;
-    JsonArray values=doc["values"].to<JsonArray>();
-    JsonArray time = doc["time"].to<JsonArray>();
-    if (node.startTime<rtc.getEpoch()<node.stopTime){
-      int n=node.period;
-      double sum_leq=0;
-      for(int i=0;i<10;i++){ // 10 mediciones
-        for(int j=0;j<n;j++){
-          sum_leq+=pow(10,(leq_1s/10));
-          vTaskDelayUntil(&xLastWakeTime, xDelay);
-        }
-        double leq = 10*log10(sum_leq/10);
-        values.add(leq);
-        time.add(rtc.getEpoch());
-      }
-      doc.shrinkToFit();  // optional
-      serializeJson(doc, output);
-      jsonValues=output;
-    }
-    delay(2000);
-  }
-}
-//
-// Setup and main loop 
-//
-// Note: Use doubles, not floats, here unless you want to pin
-//       the task to whichever core it happens to run on at the moment
-// 
-void setup() {
 
+void setup(){
   // If needed, now you can actually lower the CPU frquency,
   // i.e. if you want to (slightly) reduce ESP32 power consumption 
   setCpuFrequencyMhz(80); // It should run as low as 80MHz
@@ -513,14 +432,7 @@ void setup() {
   LoRa.setSpreadingFactor(7);
   LoRa.setCodingRate4(7);
   LoRa.enableCrc();
-  LoRa_rxMode();
-  node.id=id;
-  node.battery=(float)(analogRead(vbatPin))/4095*2*3.3*1.1;
-  node.period=1;
-  node.startTime=0;
-  node.stopTime=0;
-  node.jsonValues="";
-  rtc.setTime(1);
+  //LoRa_rxMode();
   // Create FreeRTOS queue
   samples_queue = xQueueCreate(8, sizeof(sum_queue_t));
   
@@ -536,36 +448,29 @@ void setup() {
     NULL, 
     I2S_TASK_PRI, 
     NULL,
-    1);
+    1
+  );
   xTaskCreatePinnedToCore(
     LoRa_onReceive,            // Función de la tarea
     "LoRaTask",                // Nombre de la tarea
     4096,                      // Tamaño del stack de la tarea
     NULL,                      // Parámetro de entrada de la tarea
-    4,                         // Prioridad de la tarea (0 es la más baja)
+    6,                         // Prioridad de la tarea (0 es la más baja)
     NULL,                      // Manejador de la tarea
     0                          // Núcleo en el que se ejecutará la tarea (0 o 1)
   );
-  xTaskCreatePinnedToCore(
-    saveValues,            // Función de la tarea
-    "save values",                // Nombre de la tarea
-    4096,                      // Tamaño del stack de la tarea
-    NULL,                      // Parámetro de entrada de la tarea
-    0,                         // Prioridad de la tarea (0 es la más baja)
-    NULL,                      // Manejador de la tarea
-    0                          // Núcleo en el que se ejecutará la tarea (0 o 1)
-  );
-
-
   sum_queue_t q;
   uint32_t Leq_samples = 0;
   double Leq_sum_sqr = 0;
   double Leq_dB = 0;
-  // double sum_leq=0;
-  // int n=0;
-  // unsigned long times[10];
-  // double val[10];
-  // int nValue=0;
+  JsonDocument doc;
+  String output;
+  double leq=0;
+  double sum=0;
+  int n = 0;
+  int measurement=0;
+  JsonArray values=doc["values"].to<JsonArray>();
+  JsonArray time = doc["time"].to<JsonArray>();
   // Read sum of samaples, calculated by 'i2s_reader_task'
   while (xQueueReceive(samples_queue, &q, portMAX_DELAY)) {
 
@@ -590,41 +495,37 @@ void setup() {
       Leq_dB = MIC_OFFSET_DB + MIC_REF_DB + 20 * log10(Leq_RMS / MIC_REF_AMPL);
       Leq_sum_sqr = 0;
       Leq_samples = 0;
-      
-      // Serial output, customize (or remove) as needed
-      //Serial.printf("%.1f\n", Leq_dB);
       leq_1s=Leq_dB;
-      // LoRa.beginPacket();
-      // LoRa.print(Leq_dB);
-      // LoRa.endPacket();
-      // Debug only
-      //Serial.printf("%u processing ticks\n", q.proc_ticks);
-    //   // 
-    //   sum_leq+=pow(10,(Leq_dB/10));
-    //   n++;
-    //   if(n==node.period){
-    //     n=0;
-    //     double leq = 10*log10(sum_leq/10);
-    //     val[nValue]=leq;
-    //     times[nValue]=rtc.getEpoch();
-    //     nValue++;
-    //   }
-      
-    // }
-    // if (nValue==10){// 10 mediciones
-    //   nValue=0;
-    //   JsonDocument doc;
-    //   doc["id"]=node.id;
-    //   JsonArray values=doc["values"].to<JsonArray>();
-    //   JsonArray time = doc["time"].to<JsonArray>();
-    //   for (int i=0;i<10;i++){
-    //     values.add(val[i]);
-    //     time.add(times[i]);
-    //   }
-    //   String output;
-    //   doc.shrinkToFit();  // optional
-    //   serializeJson(doc, output);
-    //   node.jsonValues=output;
+      Serial.println(leq_1s);
+      // startTime<rtc.getEpoch()<stopTime
+      if(true){
+        if(n<period){
+          sum+=pow(10, (leq_1s/10));
+          n++;
+        }
+        if(n>=period){
+          n=0;
+          leq=10*log10(sum/period);
+          sum=0;
+          measurement++;
+          char buffer[10];
+          dtostrf(leq, 5, 2, buffer);
+          values.add(buffer);
+          time.add(rtc.getEpoch()+21600);// correccion de 21600 para utc-6
+        }
+        if(measurement>=numMeasurements){
+          measurement=0;
+          doc["nodeId"]=nodeId;
+          doc.shrinkToFit();  // optional
+          serializeJson(doc, output);
+          lastJsonMeasurements=jsonMeasurements;
+          jsonMeasurements=output;
+          JsonArray values=doc["values"].to<JsonArray>();
+          JsonArray time = doc["time"].to<JsonArray>();
+          Serial.println(jsonMeasurements);
+        }
+      }
+
     }
     
     #if (USE_DISPLAY > 0)
@@ -656,17 +557,17 @@ void setup() {
       
       // The Leq numeric decibels
       display.drawString(0, 4, String(Leq_dB, 1) + " " + DB_UNITS);
-      display.drawString(0, 30, "Nodo "+String(node.id));
+      display.drawString(0, 30, "Nodo "+String(nodeId));
       
       display.display();
       
     #endif // USE_DISPLAY
   }
 }
+void loop(){
 
-void loop() {
-  // Nothing here..
 }
+
 void LoRa_rxMode(){
   LoRa.enableInvertIQ();                // active invert I and Q signals
   LoRa.receive();                       // set receive mode
@@ -682,25 +583,4 @@ void LoRa_sendMessage(String message) {
   LoRa.beginPacket();                   // start packet
   LoRa.print(message);                  // add payload
   LoRa.endPacket(false);                 // finish packet and send it
-}
-void readMessage(int packetSize) {
-  packet ="";
-  for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
-}
-
-void LoRa_sendValues(){
-  node.jsonValues=jsonValues;
-}
-void LoRa_sendInfo(){
-  JsonDocument doc;
-  doc["batery"] = node.battery;
-  doc["startTime"] = node.startTime;
-  doc["sopTime"] = node.stopTime;
-  doc["id"] = node.id;
-  doc["period"] = node.period;
-  String output;
-  doc.shrinkToFit();  // optional
-  serializeJson(doc, output);
-  //Serial.println(output);
-  node.jsonInfo=output;
 }
