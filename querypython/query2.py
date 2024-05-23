@@ -19,12 +19,6 @@ token = config["token"]
 org = config["org"]
 url = config["url"]
 
-
-# Configura la conexión a la base de datos de InfluxDB
-# url = "192.168.0.11:8086"
-# token = "vibQs9pWxQM81iQlXLVC4fWxKwnnw3RrD9AtCITKk_lgFXMgdaEmt9MCygLV1feoSB4edFMDCRAdoZXEIlaVDg=="
-# org = "PI"
-# bucket = "nivel_ruido"
 client = InfluxDBClient(url=url, token=token, org=org)
 write_api = client.write_api(write_options=SYNCHRONOUS)
 query_api = client.query_api()
