@@ -23,6 +23,7 @@ String packet;
 // Configuración
 int period;
 int numMeasurements;
+int numNodes;
 unsigned long startTime;
 unsigned long stopTime;
 bool isSetConfig=false;
@@ -115,11 +116,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
       LoRa_rxMode();
     }
     else if(String(topic)=="nodeValues/request"){
-      //LoRa_sendMessage(message);
+      LoRa_sendMessage(message);
       //delay(10);
       mess = message;
       LoRa_rxMode();
-      lastTime=millis();
+      // lastTime=millis();
     }
 }
 
@@ -137,6 +138,7 @@ void setup(){
     }
     // configuracion de la conexion LoRa
     LoRa.setSignalBandwidth(125E3);
+    LoRa.setTxPower(20);
     LoRa.setSpreadingFactor(7);
     LoRa.setCodingRate4(7);
     LoRa.enableCrc();
@@ -146,27 +148,50 @@ void loop(){
   if (!client.connected()) {reconnect();}
   client.loop();
   if(mess!=""){
-    if(millis()-lastTime>1000){
-      LoRa_sendMessage(mess);
-      LoRa_rxMode();
-      lastTime=millis();
-    }
-    int packetSize=LoRa.parsePacket();
-    if (packetSize){
-      String packet="";
-      for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
-      Serial.println(packet);
-      char buff[packetSize+1];
-      packet.toCharArray(buff,packetSize+1);
-      // Lo que se recibe de un nodo es su configuracion
-      // o sus valores guardados. Debe de ser un String de
-      // un json. Se debe de asegurar que los que se recibio es un json.
-      // de no ser así no se debe de hacer nada.
-      client.publish("node/response", buff);
-      mess="";
+    // if(millis()-lastTime>1000){
+    //   LoRa_sendMessage(mess);
+    //   LoRa_rxMode();
+    //   lastTime=millis();
+    // }
+    lastTime = millis();
+    int nTry=0;
+    while(nTry<3){
+      if (millis()-lastTime>700){
+        LoRa_sendMessage(mess);
+        LoRa_rxMode();
+        lastTime=millis();
+        nTry++;
+      }
+      int packetSize=LoRa.parsePacket();
+      if (packetSize){
+        String packet="";
+        String output;
+        JsonDocument doc;
+        for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
+        Serial.println(packet);
+        DeserializationError error = deserializeJson(doc, packet);
+        if (error) {
+          Serial.print("deserializeJson() failed: ");
+          Serial.println(error.c_str());
+          // return;
+          LoRa_sendMessage(mess);
+          LoRa_rxMode();
+        }
+        else{
+          char buff[packetSize+1];
+          packet.toCharArray(buff,packetSize+1);
+          // Lo que se recibe de un nodo es su configuracion
+          // o sus valores guardados. Debe de ser un String de
+          // un json. Se debe de asegurar que los que se recibio es un json.
+          // de no ser así no se debe de hacer nada.
+          client.publish("node/response", buff);
+          mess="";
+          break;
+        }
+      }
+      delay(5);
     }
   }
-  delay(10);
 }
 
 void LoRa_sendMessage(String message) {
