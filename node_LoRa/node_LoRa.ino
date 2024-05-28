@@ -16,7 +16,7 @@
 #define BAND    915E6
 
 // informacion y configuracion del nodo
-const u_int8_t nodeId = 1;    // identificador del nodo
+const u_int8_t nodeId = 4;    // identificador del nodo
 int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas. 
 unsigned long startTime=0; // Inicio tiempo de medicion
 unsigned long stopTime=0; // Final de tiempo de medicion
@@ -34,7 +34,7 @@ ESP32Time rtc(0);  // rtc UTC-6
 #define WEIGHTING         A_weighting // Also avaliable: 'C_weighting' or 'None' (Z_weighting)
 #define LEQ_UNITS         "LAeq"      // customize based on above weighting used
 #define DB_UNITS          "dBA"       // customize based on above weighting used
-#define USE_DISPLAY       1
+#define USE_DISPLAY       0
 
 // NOTE: Some microphones require at least DC-Blocker filter
 #define MIC_EQUALIZER     INMP441    // See below for defined IIR filters or set to 'None' to disable
@@ -44,7 +44,7 @@ ESP32Time rtc(0);  // rtc UTC-6
 #define MIC_SENSITIVITY   -26         // dBFS value expected at MIC_REF_DB (Sensitivity value from datasheet)
 #define MIC_REF_DB        94.0        // Value at which point sensitivity is specified in datasheet (dB)
 #define MIC_OVERLOAD_DB   116.0       // dB - Acoustic overload point
-#define MIC_NOISE_DB      25         // dB - Noise floor
+#define MIC_NOISE_DB      33         // dB - Noise floor
 #define MIC_BITS          24          // valid number of bits in I2S data
 #define MIC_CONVERT(s)    (s >> (SAMPLE_BITS - MIC_BITS))
 #define MIC_TIMING_SHIFT  0           // Set to one to fix MSB timing for some microphones, i.e. SPH0645LM4H-x
@@ -334,7 +334,7 @@ void LoRa_onReceive(void *parameter) {
   String output;
   JsonDocument doc;
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  const TickType_t xDelay = pdMS_TO_TICKS(20); // Esperar 20 ms
+  const TickType_t xDelay = pdMS_TO_TICKS(5); // Esperar 5 ms
   LoRa_rxMode();
   while (true) {
     int packetSize = LoRa.parsePacket();
@@ -374,10 +374,10 @@ void LoRa_onReceive(void *parameter) {
               Serial.println("No hay valores para enviar");
             }
             else{
-              LoRa_sendMessage(lastJsonMeasurements);
-              //lastJsonMeasurements=jsonMeasurements;
+              LoRa_sendMessage(jsonMeasurements);
+              lastJsonMeasurements=jsonMeasurements;
               Serial.println("valores enviados");
-              delay(10);
+              //delay(10);
               LoRa_rxMode();
             }
             
@@ -393,7 +393,7 @@ void LoRa_onReceive(void *parameter) {
               doc2["nodeId"]=nodeId;
               serializeJson(doc2, jsonNodeInfo);
               LoRa_sendMessage(jsonNodeInfo);
-              delay(10);
+              //delay(10);
               LoRa_rxMode();
           }
         }
@@ -518,10 +518,10 @@ void setup(){
           doc["nodeId"]=nodeId;
           doc.shrinkToFit();  // optional
           serializeJson(doc, output);
-          lastJsonMeasurements=jsonMeasurements;
+          //lastJsonMeasurements=jsonMeasurements;
           jsonMeasurements=output;
-          JsonArray values=doc["values"].to<JsonArray>();
-          JsonArray time = doc["time"].to<JsonArray>();
+          JsonArray values=doc["values"].to<JsonArray>(); // limpiar el array values
+          JsonArray time = doc["time"].to<JsonArray>();   // limpiar el array de time
           Serial.println(jsonMeasurements);
         }
       }
