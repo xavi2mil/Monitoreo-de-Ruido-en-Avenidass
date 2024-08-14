@@ -13,3 +13,4 @@
 *.yaml
 config.h
 .vscode
+consulta.py
