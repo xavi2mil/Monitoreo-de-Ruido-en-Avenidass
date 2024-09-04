@@ -16,7 +16,7 @@
 #define BAND    915E6
 
 // informacion y configuracion del nodo
-const u_int8_t nodeId = 4;    // identificador del nodo
+const u_int8_t nodeId = 3;    // identificador del nodo
 int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas. 
 unsigned long startTime=0; // Inicio tiempo de medicion
 unsigned long stopTime=0; // Final de tiempo de medicion
@@ -34,7 +34,7 @@ ESP32Time rtc(0);  // rtc UTC-6
 #define WEIGHTING         A_weighting // Also avaliable: 'C_weighting' or 'None' (Z_weighting)
 #define LEQ_UNITS         "LAeq"      // customize based on above weighting used
 #define DB_UNITS          "dBA"       // customize based on above weighting used
-#define USE_DISPLAY       0
+#define USE_DISPLAY       1
 
 // NOTE: Some microphones require at least DC-Blocker filter
 #define MIC_EQUALIZER     INMP441    // See below for defined IIR filters or set to 'None' to disable
@@ -89,7 +89,7 @@ constexpr double MIC_REF_AMPL = pow(10, double(MIC_SENSITIVITY)/20) * ((1<<(MIC_
 SOS_IIR_Filter DC_BLOCKER = { 
   gain: 1.0,
   sos: {{-1.0, 0.0, +0.9992, 0}}
-};
+      };
 
 // 
 // Equalizer IIR filters to flatten microphone frequency response
