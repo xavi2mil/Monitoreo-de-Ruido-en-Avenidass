@@ -33,54 +33,6 @@ bool isSetTime=false;
 int lastTime;
 String mess="";
 
-// Funcion que se ejecuta cuando llega un mensaje via
-// serial
-void callback(String message) {
-    // Serial.println(message);
-    JsonDocument doc;
-    deserializeJson(doc, message);
-    if(doc["command"]=="setTime"){
-        isSetTime=true;
-        rtc.setTime((unsigned long)doc["time"]);// Establecer el tiempo del gateway
-        // mandar un mensaje a todos los nodos para que configuren su rtc
-        // {"command":"setTime","time":rtc.getEpochTime, "nodeId":0}
-        LoRa_sendMessage(message);   // mandar a todos nos nodos la hora actual
-        //delay(10);
-        LoRa_rxMode();
-        isSetTime = true;
-    }
-    else if(doc["command"]=="setConfig"){
-        isSetConfig=true;
-        // en el mensaje viene el json con la  configuracion del nodo que LoRa a todos los nodos
-        numMeasurements = doc["numMeasurements"];
-        period = doc["period"];
-        numNodes = doc["numNodes"];
-        LoRa_sendMessage(message);
-        //delay(10);
-        LoRa_rxMode();
-        isSetConfig = true;
-    }
-    else if(doc["command"]=="getValues"){
-      // LoRa_sendMessage(message);
-      //delay(10);
-      mess = message;
-      LoRa_rxMode();
-      // lastTime=millis();
-    }
-    else if(doc["command"]=="getInfo"){
-      LoRa_sendMessage(message);
-      //delay(10);
-      mess = message;
-      LoRa_rxMode();
-      // lastTime=millis();
-    }
-    else if (doc["command"]=="startTime"){
-      startTime = doc["startTime"];
-      LoRa_sendMessage(message);
-      LoRa_rxMode();
-    }
-}
-
 void setup(){
     Serial.begin(115200);
     rtc.setTime(1609459200);
@@ -101,23 +53,86 @@ void setup(){
     LoRa.enableCrc();
     LoRa_rxMode();
 }
-void loop(){
-  // Verifica si hay un mensaje recibido desde el puerto serial
-  if (Serial.available() > 0) {
-    String message = Serial.readStringUntil('\n');
-    callback(message);  // Procesa el mensaje recibido
+String inputBuffer = "";  // Buffer para acumular datos recibidos
+
+void loop() {
+  // Verifica si hay datos en el puerto serial
+  while (Serial.available() > 0) {
+    char incomingByte = Serial.read();  // Lee un byte del serial
+    if (incomingByte == '}') {
+      inputBuffer += incomingByte;
+      // Si se detecta un delimitador de línea, procesa el comando completo
+      Serial.println("M" + inputBuffer);  // Debug
+      callback(inputBuffer);  // Procesa el comando recibido
+      inputBuffer = "";  // Limpia el buffer después de procesar
+    } else {
+      // Acumula los datos en el buffer
+      inputBuffer += incomingByte;
+    }
+    // Procesa comandos pendientes
+    if (mess != "") {
+      String response = sendCommandToNode(mess);  // Envía el comando y espera la respuesta
+      if (!response.isEmpty()) {
+        Serial.println(response);  // Envía la respuesta al serial
+      } else {
+        Serial.println("No response from node.");  // Manejo en caso de no recibir respuesta
+      }
+      mess = "";  // Limpia el mensaje pendiente
+    }
   }
 
-  // Si hay un comando pendiente (mess no está vacío), procesa el envío
-  if (mess != "") {
-    String response = sendCommandToNode(mess);  // Envía el comando y espera la respuesta
-    if (!response.isEmpty()) {
-      Serial.println(response);  // Envía la respuesta al serial
-    } else {
-      Serial.println("No response from node.");  // Manejo en caso de no recibir respuesta
+}
+
+// Funcion que se ejecuta cuando llega un mensaje via
+// serial
+void callback(String message) {
+    // Serial.println(message);
+    JsonDocument doc;
+    deserializeJson(doc, message);
+    String command = doc["command"];
+    if(command=="setTime"){
+        isSetTime=true;
+        rtc.setTime((unsigned long)doc["time"]);// Establecer el tiempo del gateway
+        // mandar un mensaje a todos los nodos para que configuren su rtc
+        // {"command":"setTime","time":rtc.getEpochTime, "nodeId":0}
+        LoRa_sendMessage(message);   // mandar a todos nos nodos la hora actual
+        //delay(10);
+        LoRa_rxMode();
     }
-    mess = "";  // Limpia el mensaje pendiente
-  }
+    else if(command=="setConfig"){
+        isSetConfig=true;
+        // en el mensaje viene el json con la  configuracion del nodo que LoRa a todos los nodos
+        numMeasurements = doc["numMeasurements"];
+        period = doc["period"];
+        numNodes = doc["numNodes"];
+        LoRa_sendMessage(message);
+        //delay(10);
+        LoRa_rxMode();
+        isSetConfig = true;
+    }
+    else if(command=="getValues"){
+      // LoRa_sendMessage(message);
+      //delay(10);
+      mess = message;
+      LoRa_rxMode();
+      // lastTime=millis();
+    }
+    else if(command=="getInfo"){
+      LoRa_sendMessage(message);
+      //delay(10);
+      mess = message;
+      LoRa_rxMode();
+      // lastTime=millis();
+    }
+    else if (command=="setStartTime"){
+      startTime = doc["startTime"];
+      LoRa_sendMessage(message);
+      LoRa_rxMode();
+    }
+    else if (command == "startMeasurements"||command == "stopMeasurements"){
+      LoRa_sendMessage(message);
+      LoRa_rxMode();
+    }
 }
 
 String sendCommandToNode(const String &command) {

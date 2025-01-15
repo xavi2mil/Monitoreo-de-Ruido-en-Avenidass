@@ -16,10 +16,11 @@
 #define BAND    915E6
 
 // informacion y configuracion del nodo
-const u_int8_t nodeId = 7;    // identificador del nodo
+const u_int8_t nodeId = 1;    // identificador del nodo
 int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas. 
 unsigned long startTime=0; // Inicio tiempo de medicion
 unsigned long stopTime=0; // Final de tiempo de medicion
+bool startMeasurements = false;
 int period=1;           // Tiempo de expocision o periodo 
 String jsonMeasurements=""; // json con las mediciones
 String lastJsonMeasurements=""; // json con las mediciones anteriores
@@ -396,6 +397,12 @@ void LoRa_onReceive(void *parameter) {
               //delay(10);
               LoRa_rxMode();
           }
+          else if(command=="startMeasurements"){
+            startMeasurements = true;
+          }
+          else if (command == "stopMeasurements"){
+            startMeasurements = false;
+          }
         }
         
       }
@@ -502,7 +509,7 @@ void setup(){
       leq_1s=Leq_dB;
       Serial.println(leq_1s);
       // startTime<rtc.getEpoch()<stopTime
-      if(true){
+      if(startMeasurements){
         if(n<period){
           sum+=pow(10, (leq_1s/10));
           n++;
