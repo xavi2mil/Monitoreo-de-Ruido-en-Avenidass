@@ -16,10 +16,11 @@
 #define BAND    915E6
 
 // informacion y configuracion del nodo
-const u_int8_t nodeId = 3;    // identificador del nodo
+const u_int8_t nodeId = 1;    // identificador del nodo
 int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas. 
 unsigned long startTime=0; // Inicio tiempo de medicion
 unsigned long stopTime=0; // Final de tiempo de medicion
+bool startMeasurements = false;
 int period=1;           // Tiempo de expocision o periodo 
 String jsonMeasurements=""; // json con las mediciones
 String lastJsonMeasurements=""; // json con las mediciones anteriores
@@ -396,6 +397,12 @@ void LoRa_onReceive(void *parameter) {
               //delay(10);
               LoRa_rxMode();
           }
+          else if(command=="startMeasurements"){
+            startMeasurements = true;
+          }
+          else if (command == "stopMeasurements"){
+            startMeasurements = false;
+          }
         }
         
       }
@@ -414,6 +421,7 @@ void setup(){
   Serial.begin(112500);
   delay(1000); // Safety
   pinMode(vbatPin, INPUT);
+  pinMode(2, INPUT_PULLDOWN);
   #if (USE_DISPLAY > 0)
     display.init();
     #if (OLED_FLIP_V > 0)
@@ -471,6 +479,9 @@ void setup(){
   int measurement=0;
   JsonArray values=doc["values"].to<JsonArray>();
   JsonArray time = doc["time"].to<JsonArray>();
+  bool estadoPantalla = true;
+  unsigned long lastTime = millis();
+
   // Read sum of samaples, calculated by 'i2s_reader_task'
   while (xQueueReceive(samples_queue, &q, portMAX_DELAY)) {
 
@@ -498,7 +509,7 @@ void setup(){
       leq_1s=Leq_dB;
       Serial.println(leq_1s);
       // startTime<rtc.getEpoch()<stopTime
-      if(true){
+      if(startMeasurements){
         if(n<period){
           sum+=pow(10, (leq_1s/10));
           n++;
@@ -529,38 +540,43 @@ void setup(){
     }
     
     #if (USE_DISPLAY > 0)
-
-      //
-      // Example code that displays the measured value.
-      // You should customize the below code for your display 
-      // and display library used.
-      //
-      
-      display.clear();
-
-      // It is important to somehow notify when the deivce is out of its range
-      // as the calculated values are very likely with big error
-      if (Leq_dB > MIC_OVERLOAD_DB) {
-        // Display 'Overload' if dB value is over the AOP
-        display.drawString(0, 24, "Overload");
-      } else if (isnan(Leq_dB) || (Leq_dB < MIC_NOISE_DB)) {
-        // Display 'Low' if dB value is below noise floor
-        display.drawString(0, 24, "Low");
+      if (digitalRead(2) == HIGH){
+        if(millis()-lastTime > 500){
+          estadoPantalla = !estadoPantalla;
+          lastTime = millis();
+        }
       }
-      
-      // The 'short' Leq line
-      double short_Leq_dB = MIC_OFFSET_DB + MIC_REF_DB + 20 * log10(sqrt(double(q.sum_sqr_weighted) / SAMPLES_SHORT) / MIC_REF_AMPL);
-      uint16_t len = min(max(0, int(((short_Leq_dB - MIC_NOISE_DB) / MIC_OVERLOAD_DB) * (display.getWidth()-1))), display.getWidth()-1);
-      display.drawHorizontalLine(0, 0, len);
-      display.drawHorizontalLine(0, 1, len);
-      display.drawHorizontalLine(0, 2, len);
-      
-      // The Leq numeric decibels
-      display.drawString(0, 4, String(Leq_dB, 1) + " " + DB_UNITS);
-      display.drawString(0, 30, "Nodo "+String(nodeId));
-      
-      display.display();
-      
+      if (!estadoPantalla){
+        display.displayOff();
+      }
+      else{
+        display.displayOn();
+        display.clear();
+
+        // It is important to somehow notify when the deivce is out of its range
+        // as the calculated values are very likely with big error
+        if (Leq_dB > MIC_OVERLOAD_DB) {
+          // Display 'Overload' if dB value is over the AOP
+          display.drawString(0, 24, "Overload");
+        } else if (isnan(Leq_dB) || (Leq_dB < MIC_NOISE_DB)) {
+          // Display 'Low' if dB value is below noise floor
+          display.drawString(0, 24, "Low");
+        }
+        
+        // The 'short' Leq line
+        double short_Leq_dB = MIC_OFFSET_DB + MIC_REF_DB + 20 * log10(sqrt(double(q.sum_sqr_weighted) / SAMPLES_SHORT) / MIC_REF_AMPL);
+        uint16_t len = min(max(0, int(((short_Leq_dB - MIC_NOISE_DB) / MIC_OVERLOAD_DB) * (display.getWidth()-1))), display.getWidth()-1);
+        display.drawHorizontalLine(0, 0, len);
+        display.drawHorizontalLine(0, 1, len);
+        display.drawHorizontalLine(0, 2, len);
+        
+        // The Leq numeric decibels
+        display.drawString(0, 4, String(Leq_dB, 1) + " " + DB_UNITS);
+        display.drawString(0, 30, "Nodo "+String(nodeId));
+        display.drawString(0, 48, rtc.getTime());
+        
+        display.display();
+      }
     #endif // USE_DISPLAY
   }
 }
