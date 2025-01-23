@@ -18,8 +18,6 @@
 // informacion y configuracion del nodo
 const u_int8_t nodeId = 1;    // identificador del nodo
 int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas. 
-unsigned long startTime=0; // Inicio tiempo de medicion
-unsigned long stopTime=0; // Final de tiempo de medicion
 bool startMeasurements = false;
 int period=1;           // Tiempo de expocision o periodo 
 String jsonMeasurements=""; // json con las mediciones
@@ -364,10 +362,8 @@ void LoRa_onReceive(void *parameter) {
           else if(command=="setConfig"){
             period=doc["period"];
             numMeasurements=doc["numMeasurements"];
-            startTime=doc["startTime"];
-            stopTime=doc["stopTime"];
             Serial.print("Configuracion establecida: ");
-            Serial.printf("Periodo: %d, Mediciones: %d, inicio: %d, fin: %d\n", period, numMeasurements, startTime, stopTime);
+            Serial.printf("Periodo: %d, Mediciones: %d\n", period, numMeasurements);
           }
           else if(command=="getValues"){
             // Serial.println("Enviando valores...");
@@ -385,8 +381,6 @@ void LoRa_onReceive(void *parameter) {
           }
           else if(command=="getInfo"){
               JsonDocument doc2;
-              doc2["starTime"]=startTime;
-              doc2["stopTime"]=stopTime;
               vBatt=(float)(analogRead(vbatPin))/4095*2*3.3*1.1;
               doc2["battery"]=vBatt;
               doc2["period"]=period;
