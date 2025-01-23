@@ -71,6 +71,7 @@ En este repositorio se encuentra el código para los sonómetros, el gateway y u
 ### Pasos para la programación
 1. **Descargar el repositorio**:
    se accede a la siguiente [liga](https://github.com/xavi2mil/Monitoreo-de-Ruido-en-Avenidass.git) y se da clic en Code y luego en download ZIP y se descomprime dentro de la carpeta de Arduino. 
+   
    ![Repositorio GitHub](imagenes/repo_github.png) 
 
 2. **Instalar las librerías**:
@@ -84,11 +85,13 @@ Desde el IDE, en la sección *Gestor de bibliotecas* se buscan e instalan las si
 
 3. **Instalar el soporte para las placas ESP32**:
 Desde el IDE, en la sección **GESTOR DE PLACAS**, buscar e instalar el gestor `esp32 de *Espressif Systems*` en su **versión 2.0.17**.
-![Gestor de placas esp32](imagenes/gestor_esp32.png "gestor esp32")
+
+   ![Gestor de placas esp32](imagenes/gestor_esp32.png "gestor esp32")
 
 4. **Cargar el sketch del sonómetro**
    - El sketch se llama `node_LoRa` y es importante modificar la variable *nodeId* dentro del sketch:
-   ![Número del nodo](imagenes/codigo_nodeID.png "numero del sonometro")
+   
+      ![Número del nodo](imagenes/codigo_nodeID.png "numero del sonometro")
    - Se debe asignar un número único a cada sonómetro (1, 2, 3, ...).
      
 5. **Cargar el sketch del gateway**:
@@ -134,9 +137,11 @@ La siguiente imagen muestra como se puede interactuar con los sonómetros a trav
 Con los comandos anteriores hemos configurado al sonómetro 1 con un periodo de medición de 3 segundos y con una retención de 5 mediciones, lo que significa que tendrá mediciones nuevas cada 15 segundos.
 #### Preparar las mediciones
 Antes de solicitar las mediciones hay que indicarle al nodo que empiece a guardar las mediciones con el comando `startMeasurements` como se muestra en la siguiente imagen:
+
 ![comando startMeasurements](imagenes/iniciar_mediciones.png "iniciar mediciones")
 El comando debe de enviarse una vez que todos los sonómetros que se quieren usar estén encendidos, de esta forma todas las mediciones de los sonómetros empezaran al mismo tiempo.
 Del lado del sonómetro si lo conectamos a la computadora veremos que imprime las mediciones que va guardando y además un vector con las estampas de tiempo de cada medición.
+
 ![mediciones](imagenes/mediciones_nodo.png "mediciones")
 
 Si observamos las estampas de tiempo se aprecia que tienen una diferencia de 3 segundos que es justo como se ha configurado el sistema.
@@ -154,7 +159,9 @@ En la imagen anterior se observa que en las mediciones que se obtuvieron despué
 #### Solicitud de las mediciones
 
 La solicitud de mediciones se hace con el comando `getValues` de la siguiente manera:
+
 ![valores](imagenes/valores_recividos.png "valores recividos")
+
 en la imagen anterior se envió el comando `getValues` al sonómetro 1 y en la siguiente línea se muestra el mensaje que envió el sonómetro el cual contiene las últimas 5 mediciones junto con sus estampas de tiempo. 
 ### Mediante Conexión MQTT
 <!-- Añadir detalles sobre cómo enviar comandos y recibir datos mediante MQTT -->
@@ -193,11 +200,14 @@ Es necesario tener instalado [Node-Red](https://nodered.org/docs/getting-started
       Si tienes dudas sobre como obtener o generar los datos anteriores da clic en la [liga](https://docs.influxdata.com/influxdb/v2/) donde se detalla el proceso de instalación y configuración inicial de la base de datos InlfluxDB v2.
          
          1. Buscar el nodo de la base de datos influxDB:
+
             ![nodo influx](imagenes/nodo_influx.png "nodo influx")
          2. Dar clic en el nodo e ingresar el nombre del bucket y el nombre de la organización:
+
             ![nodo influx](imagenes/editar_nodo_influx.png)
          3. Después en servidor dar clic en editar y colocar la dirección de la base de datos, el puerto y el token. Además seleccionar la versión 2.
-         ![conf influx](imagenes/conf_nodo_influx.png)
+
+            ![conf influx](imagenes/conf_nodo_influx.png)
 
 ### Interfaz gráfica
 
