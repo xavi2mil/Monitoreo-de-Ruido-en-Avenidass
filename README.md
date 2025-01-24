@@ -139,6 +139,7 @@ Con los comandos anteriores hemos configurado al sonómetro 1 con un periodo de 
 Antes de solicitar las mediciones hay que indicarle al nodo que empiece a guardar las mediciones con el comando `startMeasurements` como se muestra en la siguiente imagen:
 
 ![comando startMeasurements](imagenes/iniciar_mediciones.png "iniciar mediciones")
+
 El comando debe de enviarse una vez que todos los sonómetros que se quieren usar estén encendidos, de esta forma todas las mediciones de los sonómetros empezaran al mismo tiempo.
 Del lado del sonómetro si lo conectamos a la computadora veremos que imprime las mediciones que va guardando y además un vector con las estampas de tiempo de cada medición.
 
@@ -151,7 +152,9 @@ Si observamos las estampas de tiempo se aprecia que tienen una diferencia de 3 s
 #### Ajuste de fecha y hora en los sonómetros
 Ahora toca actualizar la fecha y hora actual en el sonómetro. Para hacerlo se debe de obtener la fecha y hora actual en formato UNIX y mandarla al sonómetro usando el comando `setTime` de la siguiente manera:
 ![setTime](imagenes/comando_setTime.png)
+
 Del lado del sonómetro se mostrará un mensaje de que el Tiempo (fecha) ha sido actualizado:
+
 ![setTime](imagenes/establecer_fecha_nodo.png)
 
 En la imagen anterior se observa que en las mediciones que se obtuvieron después de establecer el tiempo ya tienen la hora actualizada. **Es importante ajustar la hora del sonómetro antes de solicitar las mediciones.**
