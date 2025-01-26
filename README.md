@@ -30,12 +30,13 @@ Además, los datos recolectados se almacenan en una base de datos **InfluxDB** p
    3.1. [Configuración inicial](#configuración-inicial)
    3.2. [Mediante Conexión USB](#mediante-conexión-usb)
    3.3. [Mediante Conexión MQTT](#mediante-conexión-mqtt)
-4. [Configuración de Node-RED](#configuración-de-node-red)
-   4.1. [Configuración de nodos InfluxDB](#configuración-de-nodos-influxdb)
-   4.2. [Configuración de nodos Serial](#configuración-de-nodos-serial)
-   4.3. [Configuración de nodos MQTT](#configuración-de-nodos-mqtt)
-5. [Registro y Visualización de los Niveles de Ruido](#registro-y-visualización-de-los-niveles-de-ruido)
-6. [Solución de Problemas](#solución-de-problemas)
+4. [Registro y Visualización de los Niveles de Ruido](#registro-y-visualización-de-los-niveles-de-ruido)
+   4.1 [Requisitos](#requisitos)
+   4.2 [Pasos para ejecutar el programa](#pasos-para-ejecutar-el-programa)
+   4.3 [Interfaz gráfica](#interfaz-gráfica)
+   4.4 [Visualización de datos](#visualización-de-datos)
+   4.5 [Exportar datos](#exportar-datos)
+<!-- 5. [Solución de Problemas](#solución-de-problemas) -->
 
 ---
 
@@ -175,7 +176,18 @@ en la imagen anterior se envió el comando `getValues` al sonómetro 1 y en la s
 Esta sección describe el funcionamiento del programa desarrollado en Node-Red el cual provee una interfaz gráfica con la que se pueden configurar los sonómetros de una manera sencilla, además registra las mediciones de los sonómetros en una base de datos de InfluxDB.
 
 ### Requisitos
-Es necesario tener instalado [Node-Red](https://nodered.org/docs/getting-started/) e [InfluxDB](https://docs.influxdata.com/influxdb/v2/) version 2.7. En caso de que se quiera usar el gateway en modo MQTT se debe de tener instalado un broker MQTT, por ejemplo [Mosquitto](https://mosquitto.org/download/).
+Es necesario tener instalado [Node-RED](https://nodered.org/docs/getting-started/) e [InfluxDB](https://docs.influxdata.com/influxdb/v2/) version 2.7. En caso de que se quiera usar el gateway en modo MQTT se debe de tener instalado un broker MQTT, por ejemplo [Mosquitto](https://mosquitto.org/download/).
+
+Una vez instalados la forma predeterminada para abrir los programas es:
++ **Node-RED**: Escribir el comando `node-red` en la terminal o cmd. Después, desde el navegador, ir a la dirección `localhost:1880`.
++ **InfluxDB**.
+   
+   + En Windows se debe de ejecutar el programa desde el el cmd. La ubicacion por defecto del programa es 'C:\Program Files\InfluxData\influxdb' y una vez ubicados en esa ruta se debe de ejecutar el comando `./influxd`. 
+   + En Linux por defecto el servicio está activado siempre.
+   + Desde el navegador ir a la dirección `localhost:8086`
+
+
+
 
 ### Pasos para ejecutar el programa:
    1. **Instalar los complementos necesarios para Node-Red**: Se necesita instalar los siguientes complementos en Node-Red desde la sección de "Manage palette":
@@ -213,20 +225,34 @@ Es necesario tener instalado [Node-Red](https://nodered.org/docs/getting-started
             ![conf influx](imagenes/conf_nodo_influx.png)
 
 ### Interfaz gráfica
+La interfaz gráfica se accede desde la dirección: `localhost:1880/ui`.
 
+![ui](imagenes/ui.png "interfaz gráfica")
+
+Desde aquí se pueden ajustar los parámetros de medición de los sonómetros. En la sección de **Configuración** se ajustan los parámetros, después se da clic en el botón **GUARDAR**. En la sección de Resumen se muestra la configuración guardada en el programa, si todo está correcto se da clic en el botón **ENVIAR**, esta acción enviara a los nodos la configuración. Por último la sección **INICIAR/DETENER** sirve para iniciar o detener la solicitud de las mediciones a los sonómetros y abajo se muestra si el sistema está activo.
 
 ### Visualización de datos
 
+Se accede a la interfaz gráfica de Influx y despues de iniciar sesión se hace lo siguiente:
+1. Se accede a la sección **DATA EXPLORER**.
+2. Después se selecciona el bucket donde están alojados los datos, la medición leq y el numero identificador de los sonómetros (nodos) de los que se quiera ver los datos, para ver todos no se debe seleccionar nada:
+      + ![data explorer](imagenes/data_explorer.png)
+3. Seleccionar el rango de tiempo de la medición:
+      + ![rango Tiempo](imagenes/rango_tiempo.png "rango de tiempo")
+4. Observar la gráfica:
+      + ![grafica](imagenes/grafica_datos.png "niveles de ruido") 
 
+### Exportar datos
+Los datos de la gráfica anterior se pueden descargar en formato .CSV dando clc en el boton de **Dowload query results as a .CSV file**:
 
-<!-- Añadir detalles sobre cómo configurar nodos para comunicación MQTT -->
+![descarga](imagenes/descargar_datos_csv.png "exportar")
 
 ---
-
+<!-- 
 ## Solución de Problemas
 - **Problema:** El gateway no se comunica con los sonómetros.
   - **Solución:** Verifica que los *nodeId* sean únicos y que estén dentro del rango configurado.
 - **Problema:** No se reciben datos en InfluxDB.
   - **Solución:** Asegúrate de que el nodo InfluxDB esté configurado correctamente y la base de datos esté activa.
 
----
+--- -->
