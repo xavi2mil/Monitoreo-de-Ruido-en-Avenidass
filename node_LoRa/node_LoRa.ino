@@ -21,7 +21,6 @@ int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas
 bool startMeasurements = false;
 int period=1;           // Tiempo de expocision o periodo 
 String jsonMeasurements=""; // json con las mediciones
-String lastJsonMeasurements=""; // json con las mediciones anteriores
 String jsonNodeInfo = "";   // json con la informacion del nodo
 float vBatt=0;            // Voltaje de la batería
 const uint8_t vbatPin = 35;
@@ -372,7 +371,6 @@ void LoRa_onReceive(void *parameter) {
             }
             else{
               LoRa_sendMessage(jsonMeasurements);
-              lastJsonMeasurements=jsonMeasurements;
               Serial.println("valores enviados");
               //delay(10);
               LoRa_rxMode();
@@ -523,7 +521,6 @@ void setup(){
           doc["nodeId"]=nodeId;
           doc.shrinkToFit();  // optional
           serializeJson(doc, output);
-          //lastJsonMeasurements=jsonMeasurements;
           jsonMeasurements=output;
           JsonArray values=doc["values"].to<JsonArray>(); // limpiar el array values
           JsonArray time = doc["time"].to<JsonArray>();   // limpiar el array de time
