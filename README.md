@@ -22,9 +22,6 @@ Además, los datos recolectados se almacenan en una base de datos **InfluxDB** p
 
 ## Tabla de Contenidos
 1. [Descripción del Hardware](#descripción-del-hardware)
-   1.1. [Componentes del sonómetro](#componentes-del-sonómetro)
-   1.2. [Gateway](#gateway)
-   1.3. [Esquema de conexión](#esquema-de-conexión)
 2. [Programación de los Dispositivos](#programación-de-los-dispositivos)
 3. [Uso de los Dispositivos](#uso-de-los-dispositivos)
    3.1. [Configuración inicial](#configuración-inicial)
@@ -36,22 +33,24 @@ Además, los datos recolectados se almacenan en una base de datos **InfluxDB** p
    4.3 [Interfaz gráfica](#interfaz-gráfica)
    4.4 [Visualización de datos](#visualización-de-datos)
    4.5 [Exportar datos](#exportar-datos)
+5. [Solución de Problemas](#solución-de-problemas)
 <!-- 5. [Solución de Problemas](#solución-de-problemas) -->
 
 ---
 
 ## Descripción del Hardware
-### Componentes del sonómetro
-+ Tarjeta TTGO-LoRa32-V2.1 T3_V1.6 (LoRa32)
-+ Micrófono INMP441
-+ Batería recargable de 1200 o 2000 mAh
+1. Componentes del sonómetro
+   + Tarjeta TTGO-LoRa32-V2.1 T3_V1.6 (LoRa32)
+   + Micrófono INMP441
+   + Batería recargable de 1200 o 2000 mAh
 
-### Gateway
-+ Tarjeta TTGO-LoRa32-V2.1 T3_V1.6 (LoRa32)
+2. Gateway
+   + Tarjeta TTGO-LoRa32-V2.1 T3_V1.6 (LoRa32)
 
-### Esquema de Conexión
 **Diagrama de conexión entre el LoRa32 y el INMP441:**
+
 ![Imagen de las conexiones entre los componentes del sonómetro](imagenes/diagrama_conexiones.jpg "conexiones")
+
 **Especificaciones de pines utilizados**.
 
 | LoRa32 | INMP441 |
@@ -69,7 +68,8 @@ Para programar los dispositivos se usa el software de Arduino IDE v2.
 El repositorio del proyecto se encuentra en la siguiente [liga](https://github.com/xavi2mil/Monitoreo-de-Ruido-en-Avenidass.git). 
 En este repositorio se encuentra el código para los sonómetros, el gateway y un programa en node-red que sirve para la configuración y uso de los sonómetros desde una interfaz gráfica.
 
-### Pasos para la programación
+**Pasos**:
+
 1. **Descargar el repositorio**:
    se accede a la siguiente [liga](https://github.com/xavi2mil/Monitoreo-de-Ruido-en-Avenidass.git) y se da clic en Code y luego en download ZIP y se descomprime dentro de la carpeta de Arduino. 
    
@@ -126,17 +126,40 @@ Los sonómetros son controlados mediante comandos enviados a través del gateway
 Estos comandos pueden enviarse mediante conexión USB o MQTT.
 
 ### Mediante Conexión USB
+Interactúa con los dispositivos de la siguiente manera:
+
 1. Conecta el gateway a la computadora mediante un cable USB.
 2. Usa el monitor serial del Arduino IDE configurado a 115200 Baud.
 3. Envía los comandos JSON directamente desde el monitor.
 
-#### Configuración
-La siguiente imagen muestra como se puede interactuar con los sonómetros a través del gateway desde el monitor serie del IDE de Arduino. Todos los mensajes que se envían al gateway vía serial además de los que reciba vía LoRa los imprimirá en el monitor serie. Los mensajes que recibe por USB los imprime con una "M" antes. El primer comando que se envió fue `{"command":"getInfo", "nodeId":1}` y la respuesta que se recibió del sonómetro fue **{"battery":4.42337, "period":1, "numMeasurements":10, "nodeId":1}**, esta respuesta muestra la configuración por defecto del sonómetro además del voltaje de su batería. Para cambiar la configuración se usó el comando: `{"command":"setConfig", "period";3, "numMeasurements":5, "node":0}`, con este comando configuramos a todos los sonometros ("node":0) con un periodo de 3 y un número de mediciones de 10. Después se ejecutó por segunda vez el comando `{"command":"getInfo", "nodeId":1}` y la respuesta del sonómetro cambió a **{"battery":4.292176, "period":3, "numMeasurements":5, "nodeId":1}**.
+**Ejemplo**:
+Ejemplo:
+
+La siguiente imagen ilustra cómo se puede interactuar con los sonómetros a través del gateway utilizando el monitor serie del IDE de Arduino. Todos los mensajes enviados al gateway mediante la conexión serial, así como los que recibe vía LoRa, se imprimirán en el monitor serie. Para distinguir su origen, los mensajes recibidos por USB se mostrarán con una "M" al inicio.
+
+El primer comando enviado fue `{"command":"getInfo", "nodeId":1}`, y la respuesta recibida del sonómetro fue:
+
+`{"battery":4.42337, "period":1, "numMeasurements":10, "nodeId":1}`
+
+Esta respuesta muestra la configuración predeterminada del sonómetro junto con el voltaje de su batería.
+
+Para modificar la configuración, se utilizó el siguiente comando:
+
+`{"command":"setConfig", "period":3, "numMeasurements":5, "node":0}`
+
+Este comando establece un período de 3 y un número de mediciones de 5 para todos los sonómetros (`"node":0`).
+
+Posteriormente, se ejecutó nuevamente el comando `{"command":"getInfo", "nodeId":1}`, y la respuesta del sonómetro reflejó los nuevos valores:
+
+`{"battery":4.292176, "period":3, "numMeasurements":5, "nodeId":1}`
+
 
 !["Comandos de ejemplo"](imagenes/ejemplo_comandos.png "comandos de ejemplo")
 
 Con los comandos anteriores hemos configurado al sonómetro 1 con un periodo de medición de 3 segundos y con una retención de 5 mediciones, lo que significa que tendrá mediciones nuevas cada 15 segundos.
+
 #### Preparar las mediciones
+
 Antes de solicitar las mediciones hay que indicarle al nodo que empiece a guardar las mediciones con el comando `startMeasurements` como se muestra en la siguiente imagen:
 
 ![comando startMeasurements](imagenes/iniciar_mediciones.png "iniciar mediciones")
@@ -248,11 +271,13 @@ Los datos de la gráfica anterior se pueden descargar en formato .CSV dando clc 
 ![descarga](imagenes/descargar_datos_csv.png "exportar")
 
 ---
-<!-- 
 ## Solución de Problemas
-- **Problema:** El gateway no se comunica con los sonómetros.
-  - **Solución:** Verifica que los *nodeId* sean únicos y que estén dentro del rango configurado.
-- **Problema:** No se reciben datos en InfluxDB.
-  - **Solución:** Asegúrate de que el nodo InfluxDB esté configurado correctamente y la base de datos esté activa.
 
---- -->
+| Problema | Solución |
+| :---- | :---- |
+| No se establece la conexión entre el gateway y el servidor. | Verifica que el gateway esté cargado con el sketch correcto. Si estás usando el gateway conectado por USB, asegúrate de configurar el puerto correctamente en Node-RED. Si estás usando el gateway con el protocolo MQTT, conectalo a la computadora usando un cable usb y abre el monitor serial para ver los mensajes de depuración. Reinicia el gateway y observa si se establece la conexión wifi y la conexión MQTT. Si no se establece alguna de estas conexiones entonces verifica que el archivo config.h esté con los parámetros de conexión correctos. En el programa de node-RED verifica que el nodo de conexión MQTT esté configurado correctamente. |
+| No se reciben datos en InfluxDB. | Asegúrate de que el nodo InfluxDB esté configurado correctamente y la base de datos esté activa.  Asegurarse que el token que se está usando tiene premios de escritura en el bucket donde se guardan los datos. Verifica de aplicar un correcto rango de tiempo para la observación de datos. |
+| Los datos observados en la gráfica de Influx no concuerdan con las mediciones realizadas | Asegúrate de poner una ventana de observación adecuada. Para ver los datos verdaderos pon una ventana de 1 segundo. |
+| Uno o más sonómetros no están registrando datos. | Asegúrate de que el sonómetro esté encendido y que su batería esté cargada. Reinicia el proceso para solicitar las mediciones. Puede que a los sonómetros que no están enviando datos no les haya llegado la señal que indica que comiencen a guardar mediciones o que no tengan configurada su hora y fecha. |
+| Poca duración de la batería | Cada sonómetro tiene la capacidad de realizar mediciones continuas por más de 20 horas. De no ser el caso intenta lo siguiente: Deja cargando el sonómetro el hasta que la luz indicadora de carga se apague. La tarjeta LoRa32 tiene tres leds integrados, en la parte superior junto a su antena están dos leds uno rojo y otro azul, el led azul es el que indica si la batería aún se está cargando. Cambiar la batería por una nueva  de mayor capacidad. |
+--- --
