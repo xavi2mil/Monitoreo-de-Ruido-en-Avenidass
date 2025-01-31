@@ -34,7 +34,6 @@ Además, los datos recolectados se almacenan en una base de datos **InfluxDB** p
    4.4 [Visualización de datos](#visualización-de-datos)
    4.5 [Exportar datos](#exportar-datos)
 5. [Solución de Problemas](#solución-de-problemas)
-<!-- 5. [Solución de Problemas](#solución-de-problemas) -->
 
 ---
 
@@ -189,7 +188,7 @@ La solicitud de mediciones se hace con el comando `getValues` de la siguiente ma
 
 ![valores](imagenes/valores_recividos.png "valores recividos")
 
-en la imagen anterior se envió el comando `getValues` al sonómetro 1 y en la siguiente línea se muestra el mensaje que envió el sonómetro el cual contiene las últimas 5 mediciones junto con sus estampas de tiempo. 
+En la imagen anterior se envió el comando `getValues` al sonómetro 1 y en la siguiente línea se muestra el mensaje que envió el sonómetro el cual contiene las últimas 5 mediciones junto con sus estampas de tiempo. 
 ### Mediante Conexión MQTT
 <!-- Añadir detalles sobre cómo enviar comandos y recibir datos mediante MQTT -->
 
@@ -199,13 +198,13 @@ en la imagen anterior se envió el comando `getValues` al sonómetro 1 y en la s
 Esta sección describe el funcionamiento del programa desarrollado en Node-Red el cual provee una interfaz gráfica con la que se pueden configurar los sonómetros de una manera sencilla, además registra las mediciones de los sonómetros en una base de datos de InfluxDB.
 
 ### Requisitos
-Es necesario tener instalado [Node-RED](https://nodered.org/docs/getting-started/) e [InfluxDB](https://docs.influxdata.com/influxdb/v2/) version 2.7. En caso de que se quiera usar el gateway en modo MQTT se debe de tener instalado un broker MQTT, por ejemplo [Mosquitto](https://mosquitto.org/download/).
+Tener instalado [Node-RED](https://nodered.org/docs/getting-started/) e [InfluxDB](https://docs.influxdata.com/influxdb/v2/) version 2.7. En caso de que se quiera usar el gateway en modo MQTT se debe de tener instalado un broker MQTT, por ejemplo [Mosquitto](https://mosquitto.org/download/).
 
 Una vez instalados la forma predeterminada para abrir los programas es:
 + **Node-RED**: Escribir el comando `node-red` en la terminal o cmd. Después, desde el navegador, ir a la dirección `localhost:1880`.
 + **InfluxDB**.
    
-   + En Windows se debe de ejecutar el programa desde el el cmd. La ubicacion por defecto del programa es 'C:\Program Files\InfluxData\influxdb' y una vez ubicados en esa ruta se debe de ejecutar el comando `./influxd`. 
+   + En Windows se debe de ejecutar el programa desde el cmd. La ubicación por defecto del programa es 'C:\Program Files\InfluxData\influxdb' y una vez ubicados en esa ruta se debe de ejecutar el comando `./influxd`. 
    + En Linux por defecto el servicio está activado siempre.
    + Desde el navegador ir a la dirección `localhost:8086`
 
@@ -218,7 +217,7 @@ Una vez instalados la forma predeterminada para abrir los programas es:
       + node-red-dashboard
       + node-red-node-serialport
    
-   2. **Importar los nodos del prograam**: Se encuentran en el archivo flows.json dentro de la carpeta flows_nodered del repositorio
+   2. **Importar los nodos del programa**: Se encuentran en el archivo flows.json dentro de la carpeta flows_nodered del repositorio
    3. **Configurar los nodos de comunicación serial**:
    Después de haber importado correctamente los nodos, se deben de configurar aquellos que se encarga de la comunicación serial. Para ello es necesario conocer el puerto al cual se conectó el gateway, por ejemplo COM4 en Windows o /dev/ttyACM0 en Linux y establecer la velocidad de comunicación en 115200 baudios.
       1. Seleccionar cualquier nodo de comunicación serial y ajustar los parámetros de conexión:
@@ -243,7 +242,7 @@ Una vez instalados la forma predeterminada para abrir los programas es:
          2. Dar clic en el nodo e ingresar el nombre del bucket y el nombre de la organización:
 
             ![nodo influx](imagenes/editar_nodo_influx.png)
-         3. Después en servidor dar clic en editar y colocar la dirección de la base de datos, el puerto y el token. Además seleccionar la versión 2.
+         3. Después en servidor dar clic en editar y colocar la dirección de la base de datos, el puerto y el token. Además, seleccionar la versión 2.
 
             ![conf influx](imagenes/conf_nodo_influx.png)
 
@@ -252,13 +251,13 @@ La interfaz gráfica se accede desde la dirección: `localhost:1880/ui`.
 
 ![ui](imagenes/ui.png "interfaz gráfica")
 
-Desde aquí se pueden ajustar los parámetros de medición de los sonómetros. En la sección de **Configuración** se ajustan los parámetros, después se da clic en el botón **GUARDAR**. En la sección de Resumen se muestra la configuración guardada en el programa, si todo está correcto se da clic en el botón **ENVIAR**, esta acción enviara a los nodos la configuración. Por último la sección **INICIAR/DETENER** sirve para iniciar o detener la solicitud de las mediciones a los sonómetros y abajo se muestra si el sistema está activo.
+Desde aquí se pueden ajustar los parámetros de medición de los sonómetros. En la sección de **Configuración** se ajustan los parámetros, después se da clic en el botón **GUARDAR**. En la sección de Resumen se muestra la configuración guardada en el programa, si todo está correcto se da clic en el botón **ENVIAR**, esta acción enviará a los nodos la configuración. Por último la sección **INICIAR/DETENER** sirve para iniciar o detener la solicitud de las mediciones a los sonómetros y abajo se muestra si el sistema está activo.
 
 ### Visualización de datos
 
-Se accede a la interfaz gráfica de Influx y despues de iniciar sesión se hace lo siguiente:
+Se accede a la interfaz gráfica de Influx y después de iniciar sesión se hace lo siguiente:
 1. Se accede a la sección **DATA EXPLORER**.
-2. Después se selecciona el bucket donde están alojados los datos, la medición leq y el numero identificador de los sonómetros (nodos) de los que se quiera ver los datos, para ver todos no se debe seleccionar nada:
+2. Después se selecciona el bucket donde están alojados los datos, la medición leq y el número identificador de los sonómetros (nodos) de los que se quiera ver los datos, para ver todos no se debe seleccionar nada:
       + ![data explorer](imagenes/data_explorer.png)
 3. Seleccionar el rango de tiempo de la medición:
       + ![rango Tiempo](imagenes/rango_tiempo.png "rango de tiempo")
