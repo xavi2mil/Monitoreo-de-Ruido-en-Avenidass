@@ -8,17 +8,16 @@
 #include <ArduinoJson.h>  
 
 // informacion y configuracion del nodo
-const u_int8_t nodeId = 1;    // identificador del nodo
+const uint8_t nodeId = 1;
 int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas. 
-// bool startMeasurements = false;
+bool startMeasurements = false;
 int period=1;           // Tiempo de expocision o periodo 
-String jsonMeasurements=""; // json con las mediciones
-String jsonNodeInfo = "";   // json con la informacion del nodo
 float vBatt=0;            // Voltaje de la batería
 const uint8_t vbatPin = 35;
+const uint8_t bottomtPin = 2;
 double leq_1s;          // Valor equivalente de un segundo 
 
-ESP32Time rtc(0);  // rtc UTC-6
+ESP32Time rtc(-21600);  // rtc UTC-6
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -391,7 +390,7 @@ void setup(){
   int measurement=0;
   JsonArray values=doc["values"].to<JsonArray>();
   JsonArray time = doc["time"].to<JsonArray>();
-  bool estadoPantalla = true;
+  bool stateDisplay = true;
   unsigned long lastTime = millis();
 
   // Read sum of samaples, calculated by 'i2s_reader_task'
@@ -422,7 +421,7 @@ void setup(){
       Serial.println(leq_1s);
       // startTime<rtc.getEpoch()<stopTime
       
-      if(n<period){
+      if(n<period && startMeasurements){
         sum+=pow(10, (leq_1s/10));
         n++;
       }
@@ -440,10 +439,10 @@ void setup(){
         measurement=0;
         doc["nodeId"]=nodeId;
         doc.shrinkToFit();  // optional
-        char output[256];
-        serializeJson(doc, output);
+        char jsonMeasurements[256];
+        serializeJson(doc, jsonMeasurements);
         if (client.connected()){
-          client.publish("measurements", output);
+          client.publish("azc/sonometro/measurements", jsonMeasurements);
         }
         JsonArray values=doc["values"].to<JsonArray>(); // limpiar el array values
         JsonArray time = doc["time"].to<JsonArray>();   // limpiar el array de time
@@ -452,13 +451,13 @@ void setup(){
     }
     
     #if (USE_DISPLAY > 0)
-      if (digitalRead(2) == HIGH){
+      if (digitalRead(bottomPin) == HIGH){
         if(millis()-lastTime > 500){
-          estadoPantalla = !estadoPantalla;
+          stateDisplay = !stateDisplay;
           lastTime = millis();
         }
       }
-      if (!estadoPantalla){
+      if (!stateDisplay){
         display.displayOff();
       }
       else{
@@ -508,12 +507,14 @@ void reconnect() {
   // Loop hasta que nos reconectemos exitosamente
   while (!client.connected()) {
     Serial.println("Intentando conexión MQTT...");
+    String client_id = "esp32-client-" + String(WiFi.macAddress());
     // Intentar conectarse
-    if (client.connect("ESP32Client")) {
+    if (client.connect(client_id.c_str(), MQTT_USER_NAME, MQTT_PASSWORD)) {
         Serial.println("Conectado al servidor MQTT.");
-        client.subscribe("setTime");      // Recibe la fecha y hora actuales.
-        client.subscribe("setConfig");    // Recibe la configuración.
-        client.subscribe("info/request"); // Recibe una solicitud de envio de información.
+        client.subscribe("azc/sonometro/setTime");      // Recibe la fecha y hora actuales.
+        client.subscribe("azc/sonometro/setConfig");    // Recibe la configuración.
+        client.subscribe("azc/sonometro/info/request"); // Recibe una solicitud de envio de información.
+        client.subscribe("azc/sonometro/startMeasurements");
     } 
     else {
       // Si no nos podemos conectar, esperamos un momento antes de intentar de nuevo
@@ -529,6 +530,7 @@ void reconnect() {
 // al que el cliente esta suscrito
 void callback(char* topic, byte* payload, unsigned int length) {
   char message[length + 1];
+  int nodoDestino=0;
 
   for (int i = 0; i < length; i++) {
     message[i] = (char)payload[i];
@@ -537,9 +539,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
   message[length] = '\0';
   Serial.println(message);
 
-  if (strcmp(topic, "setTime") == 0) { 
+  if (strcmp(topic, "azc/sonometro/setTime") == 0) { 
     rtc.setTime(atol(message) + 1);
-  } else if (strcmp(topic, "setConfig") == 0) {
+  } else if (strcmp(topic, "azc/sonometro/setConfig") == 0) {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, message);
     if (error) {
@@ -549,18 +551,31 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
     period = doc["period"];
     numMeasurements = doc["numMeasurements"];
-  } else if (strcmp(topic, "info/request") == 0) {
-    JsonDocument doc2;
-    vBatt = (float)(analogRead(vbatPin)) / 4095 * 2 * 3.3 * 1.1;
-    doc2["battery"] = vBatt;
-    doc2["period"] = period;
-    doc2["numMeasurements"] = numMeasurements;
-    doc2["nodeId"] = nodeId;
+  } else if (strcmp(topic, "azc/sonometro/info/request") == 0) {
 
-    char jsonBuffer[256]; 
-    serializeJson(doc2, jsonBuffer);
+    nodoDestino = atol(message);
 
-    client.publish("info/response", jsonBuffer);
-    Serial.println(jsonBuffer);
+    if (nodoDestino==nodeId||nodoDestino == 0){
+      JsonDocument doc2;
+      vBatt = (float)(analogRead(vbatPin)) / 4095 * 2 * 3.3 * 1.1;
+      doc2["battery"] = vBatt;
+      doc2["period"] = period;
+      doc2["numMeasurements"] = numMeasurements;
+      doc2["nodeId"] = nodeId;
+
+      char jsonBuffer[256]; 
+      serializeJson(doc2, jsonBuffer);
+
+      client.publish("azc/sonometro/info/response", jsonBuffer);
+      Serial.println(jsonBuffer);
+    }
+    
+  }else if (strcmp(topic, "azc/sonometro/startMeasurements") == 0){
+    if (strcmp(message, "true")==0){
+      startMeasurements = true;
+    }
+    else if(strcmp(message, "false")==0){
+      startMeasurements = false;
+    }
   }
 }
