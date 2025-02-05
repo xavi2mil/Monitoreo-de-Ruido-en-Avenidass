@@ -42,13 +42,21 @@ Además, los datos recolectados se almacenan en una base de datos **InfluxDB** p
    + Tarjeta TTGO-LoRa32-V2.1 T3_V1.6 (LoRa32)
    + Micrófono INMP441
    + Batería recargable de 1200 o 2000 mAh
+1. Componentes del sonómetro
+   + Tarjeta TTGO-LoRa32-V2.1 T3_V1.6 (LoRa32)
+   + Micrófono INMP441
+   + Batería recargable de 1200 o 2000 mAh
 
+2. Gateway
+   + Tarjeta TTGO-LoRa32-V2.1 T3_V1.6 (LoRa32)
 2. Gateway
    + Tarjeta TTGO-LoRa32-V2.1 T3_V1.6 (LoRa32)
 
 **Diagrama de conexión entre el LoRa32 y el INMP441:**
 
+
 ![Imagen de las conexiones entre los componentes del sonómetro](imagenes/diagrama_conexiones.jpg "conexiones")
+
 
 **Especificaciones de pines utilizados**.
 
@@ -66,6 +74,8 @@ Además, los datos recolectados se almacenan en una base de datos **InfluxDB** p
 Para programar los dispositivos se usa el software de Arduino IDE v2.
 El repositorio del proyecto se encuentra en la siguiente [liga](https://github.com/xavi2mil/Monitoreo-de-Ruido-en-Avenidass.git). 
 En este repositorio se encuentra el código para los sonómetros, el gateway y un programa en node-red que sirve para la configuración y uso de los sonómetros desde una interfaz gráfica.
+
+**Pasos**:
 
 **Pasos**:
 
@@ -127,9 +137,32 @@ Estos comandos pueden enviarse mediante conexión USB o MQTT.
 ### Mediante Conexión USB
 Interactúa con los dispositivos de la siguiente manera:
 
+Interactúa con los dispositivos de la siguiente manera:
+
 1. Conecta el gateway a la computadora mediante un cable USB.
 2. Usa el monitor serial del Arduino IDE configurado a 115200 Baud.
 3. Envía los comandos JSON directamente desde el monitor.
+
+**Ejemplo**:
+Ejemplo:
+
+La siguiente imagen ilustra cómo se puede interactuar con los sonómetros a través del gateway utilizando el monitor serie del IDE de Arduino. Todos los mensajes enviados al gateway mediante la conexión serial, así como los que recibe vía LoRa, se imprimirán en el monitor serie. Para distinguir su origen, los mensajes recibidos por USB se mostrarán con una "M" al inicio.
+
+El primer comando enviado fue `{"command":"getInfo", "nodeId":1}`, y la respuesta recibida del sonómetro fue:
+
+`{"battery":4.42337, "period":1, "numMeasurements":10, "nodeId":1}`
+
+Esta respuesta muestra la configuración predeterminada del sonómetro junto con el voltaje de su batería.
+
+Para modificar la configuración, se utilizó el siguiente comando:
+
+`{"command":"setConfig", "period":3, "numMeasurements":5, "node":0}`
+
+Este comando establece un período de 3 y un número de mediciones de 5 para todos los sonómetros (`"node":0`).
+
+Posteriormente, se ejecutó nuevamente el comando `{"command":"getInfo", "nodeId":1}`, y la respuesta del sonómetro reflejó los nuevos valores:
+
+`{"battery":4.292176, "period":3, "numMeasurements":5, "nodeId":1}`
 
 **Ejemplo**:
 Ejemplo:
@@ -157,7 +190,9 @@ Posteriormente, se ejecutó nuevamente el comando `{"command":"getInfo", "nodeId
 
 Con los comandos anteriores hemos configurado al sonómetro 1 con un periodo de medición de 3 segundos y con una retención de 5 mediciones, lo que significa que tendrá mediciones nuevas cada 15 segundos.
 
+
 #### Preparar las mediciones
+
 
 Antes de solicitar las mediciones hay que indicarle al nodo que empiece a guardar las mediciones con el comando `startMeasurements` como se muestra en la siguiente imagen:
 
