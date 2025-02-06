@@ -442,7 +442,7 @@ void setup(){
         char jsonMeasurements[256];
         serializeJson(doc, jsonMeasurements);
         if (client.connected()){
-          client.publish("azc/sonometro/measurements", jsonMeasurements);
+          client.publish("sono/measurements", jsonMeasurements);
         }
         JsonArray values=doc["values"].to<JsonArray>(); // limpiar el array values
         JsonArray time = doc["time"].to<JsonArray>();   // limpiar el array de time
@@ -511,10 +511,10 @@ void reconnect() {
     // Intentar conectarse
     if (client.connect(client_id.c_str(), MQTT_USER_NAME, MQTT_PASSWORD)) {
         Serial.println("Conectado al servidor MQTT.");
-        client.subscribe("azc/sonometro/setTime");      // Recibe la fecha y hora actuales.
-        client.subscribe("azc/sonometro/setConfig");    // Recibe la configuración.
-        client.subscribe("azc/sonometro/info/request"); // Recibe una solicitud de envio de información.
-        client.subscribe("azc/sonometro/startMeasurements");
+        client.subscribe("sono/setTime");      // Recibe la fecha y hora actuales.
+        client.subscribe("sono/setConfig");    // Recibe la configuración.
+        client.subscribe("sono/info/request"); // Recibe una solicitud de envio de información.
+        client.subscribe("sono/startMeasurements");
     } 
     else {
       // Si no nos podemos conectar, esperamos un momento antes de intentar de nuevo
@@ -539,9 +539,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
   message[length] = '\0';
   Serial.println(message);
 
-  if (strcmp(topic, "azc/sonometro/setTime") == 0) { 
+  if (strcmp(topic, "sono/setTime") == 0) { 
     rtc.setTime(atol(message) + 1);
-  } else if (strcmp(topic, "azc/sonometro/setConfig") == 0) {
+  } else if (strcmp(topic, "sono/setConfig") == 0) {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, message);
     if (error) {
@@ -551,7 +551,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
     period = doc["period"];
     numMeasurements = doc["numMeasurements"];
-  } else if (strcmp(topic, "azc/sonometro/info/request") == 0) {
+  } else if (strcmp(topic, "sono/info/request") == 0) {
 
     nodoDestino = atol(message);
 
@@ -566,11 +566,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
       char jsonBuffer[256]; 
       serializeJson(doc2, jsonBuffer);
 
-      client.publish("azc/sonometro/info/response", jsonBuffer);
+      client.publish("sono/info/response", jsonBuffer);
       Serial.println(jsonBuffer);
     }
     
-  }else if (strcmp(topic, "azc/sonometro/startMeasurements") == 0){
+  }else if (strcmp(topic, "sono/startMeasurements") == 0){
     if (strcmp(message, "true")==0){
       startMeasurements = true;
     }
