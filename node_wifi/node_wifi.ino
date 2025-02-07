@@ -14,7 +14,7 @@ bool startMeasurements = false;
 int period=1;           // Tiempo de expocision o periodo 
 float vBatt=0;            // Voltaje de la batería
 const uint8_t vbatPin = 35;
-const uint8_t bottomtPin = 2;
+const uint8_t bottomPin = 2;
 double leq_1s;          // Valor equivalente de un segundo 
 
 ESP32Time rtc(-21600);  // rtc UTC-6
@@ -430,16 +430,16 @@ void setup(){
         leq=10*log10(sum/period);
         sum=0;
         measurement++;
-        char buffer[10];
-        dtostrf(leq, 5, 2, buffer);
-        values.add(buffer);
+        // char buffer[10];
+        // dtostrf(leq, 5, 2, buffer);
+        values.add(leq);
         time.add(rtc.getEpoch()+21600);// correccion de 21600 para utc-6
       }
       if(measurement>=numMeasurements){
         measurement=0;
         doc["nodeId"]=nodeId;
         doc.shrinkToFit();  // optional
-        char jsonMeasurements[256];
+        char jsonMeasurements[512];
         serializeJson(doc, jsonMeasurements);
         if (client.connected()){
           client.publish("sono/measurements", jsonMeasurements);
