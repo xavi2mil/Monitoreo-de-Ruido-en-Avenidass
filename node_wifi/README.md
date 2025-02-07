@@ -70,6 +70,7 @@ El sonómetro imprimirá en el puerto serial el estado de su conexión WiFi y su
     ![Ejemplo de flujo](imagenes/image-8.png)
 
 4. El nodo `mqtt out` debe de estar configurado con la información de tu broker MQTT, en este caso se usaron los parámetros del broker de **EMQX**.
+
     ![alt text](imagenes/image-3.png)
 
 ### 6. Recibir la Respuesta del Sonómetro
@@ -79,18 +80,24 @@ El sonómetro imprimirá en el puerto serial el estado de su conexión WiFi y su
     ![Ejemplo de flujo](imagenes/image-4.png)
 
 3. Da clic en Deploy y luego en el nodo de "inject". Deberás de observar en la salida de debug un mensaje en formato JSON con la información del sonómetro.
+
     ![Mensaje recibido](imagenes/image-6.png)
+
 El mensaje que envió el sonómetro indica que está configurado con un periodo de un segundo y que guarda 10 mediciones. Esta es la configuración por defecto.
 
 ### 7. Cambiar la Configuración del Sonómetro
 Para modificar la configuración, agrega un nodo `mqtt out` que publique en `sono/setConfig`.
+
 ![alt text](imagenes/image-1.png)
+
 El mensaje JSON debe ser similar a este:
 ```json
 {"numMeasurements":5, "period":5}
 ```
 Al dar clic en el nodo de "inject" la configuración le llegará al sonómetro y este se reconfigurará con la nueva configuración. Para comprobarlo debemos de volver a dar clic en el nodo de inject que se creó en el paso 5. En la sección de debug podremos ver la nueva configuración del sonómetro:
+
 ![alt text](imagenes/image-2.png)
+
 El nuevo mensaje muestra que el periodo es de 5 segundos y que el número de mediciones que guarda es de 5.
 
 ### 8. Configurar Fecha y Hora
@@ -132,7 +139,9 @@ Usaremos la base de datos InfluxDB versión 2, para ello:
     [{"leq":41.99759735,"time":1738908925},{"nodo":1}]]
     ```
     Para ello, se coloca un nodo de función entre el nodo suscrito al tema `sono/measurements` y el nodo de `influxdb out`. 
+
     ![nodos para guardar las mediciones](imagenes/image-14.png)
+
     Dentro de este nodo debe escribirse el siguiente código:
 
     ```javascript
@@ -152,5 +161,6 @@ Usaremos la base de datos InfluxDB versión 2, para ello:
     return msg;
     ```
 4. Por último revisa la gráfica de las mediciones desde el **DATA EXPLORER** en la interfaz gráfica de InfluxDB:
-![grafica con las mediciones](imagenes/image-15.png)
+
+    ![grafica con las mediciones](imagenes/image-15.png)
 ---
