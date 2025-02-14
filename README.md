@@ -77,10 +77,8 @@ En este repositorio se encuentra el código para los sonómetros, el gateway y u
 
 **Pasos**:
 
-**Pasos**:
-
 1. **Descargar el repositorio**:
-   se accede a la siguiente [liga](https://github.com/xavi2mil/Monitoreo-de-Ruido-en-Avenidass.git) y se da clic en Code y luego en download ZIP y se descomprime dentro de la carpeta de Arduino. 
+   Se accede a la siguiente [liga](https://github.com/xavi2mil/Monitoreo-de-Ruido-en-Avenidass.git) y se da clic en Code y luego en download ZIP y se descomprime dentro de la carpeta de Arduino. 
    
    ![Repositorio GitHub](imagenes/repo_github.png) 
 
@@ -297,10 +295,10 @@ Se accede a la interfaz gráfica de Influx y después de iniciar sesión se hace
 3. Seleccionar el rango de tiempo de la medición:
       + ![rango Tiempo](imagenes/rango_tiempo.png "rango de tiempo")
 4. Observar la gráfica:
-      + ![grafica](imagenes/grafica_datos.png "niveles de ruido") 
+      + ![gráfica](imagenes/grafica_datos.png "niveles de ruido") 
 
 ### Exportar datos
-Los datos de la gráfica anterior se pueden descargar en formato .CSV dando clc en el boton de **Dowload query results as a .CSV file**:
+Los datos de la gráfica anterior se pueden descargar en formato .CSV dando clic en el botón de **Dowload query results as a .CSV file**:
 
 ![descarga](imagenes/descargar_datos_csv.png "exportar")
 

@@ -455,7 +455,8 @@
         "y": 280,
         "wires": [
             [
-                "31b750adddd877b7"
+                "31b750adddd877b7",
+                "46388962574cd84a"
             ]
         ]
     },
@@ -555,7 +556,7 @@
         "topicType": "msg",
         "format": "{{value}}",
         "min": 0,
-        "max": "20",
+        "max": "8",
         "step": 1,
         "className": "",
         "x": 350,
@@ -901,7 +902,7 @@
         "type": "function",
         "z": "4a45edcd806af1f3",
         "name": "setConfig",
-        "func": "var starTime=Math.floor(Date.now()/1000);\nmsg.payload={\n    \"command\":\"setConfig\",\n    \"nodeId\":0,\n    \"period\":global.get(\"period\"),\n    \"numMeasurements\":global.get(\"numMeasurements\"),\n    \"startTime\":global.get(\"startTime\"),\n    \"stopTime\":global.get(\"stopTime\")\n}\nreturn msg;",
+        "func": "var starTime=Math.floor(Date.now()/1000);\nmsg.payload={\n    \"command\":\"setConfig\",\n    \"nodeId\":0,\n    \"period\":global.get(\"period\"),\n    \"numMeasurements\":global.get(\"numMeasurements\"),\n}\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1266,7 +1267,7 @@
         "type": "debug",
         "z": "4a45edcd806af1f3",
         "name": "debug 22",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
