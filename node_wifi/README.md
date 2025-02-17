@@ -164,3 +164,72 @@ Usaremos la base de datos InfluxDB versión 2, para ello:
 
     ![grafica con las mediciones](imagenes/image-15.png)
 ---
+## Programa de Adquisición de Datos en Node-RED
+
+Esta sección explica cómo crear un programa en Node-RED para registrar las mediciones de los sonómetros en la base de datos InfluxDB.
+
+### Consideraciones Previas
+Es posible que ya exista un programa ejecutándose en Node-RED y que no desees detenerlo o eliminarlo para correr uno nuevo. En este caso, se recomienda ejecutar una segunda instancia de Node-RED en un puerto distinto al principal. Para hacerlo, sigue estos pasos:
+
+### Creación de una Nueva Instancia de Node-RED
+1. **Crear una Carpeta de Trabajo**
+   - Crea una nueva carpeta donde se almacenarán los programas de la nueva instancia de Node-RED.
+
+2. **Ejecutar Node-RED en un Puerto Diferente**
+   - Abre una terminal dentro de la carpeta recién creada y ejecuta el siguiente comando:
+   
+     ```bash
+     node-red -p 1881 -u .
+     ```
+   - Este comando iniciará una nueva instancia de Node-RED en el puerto `1881`.
+
+3. **Acceder a la Nueva Instancia**
+   - Abre un navegador web y dirígete a la dirección: [http://localhost:1881](http://localhost:1881).
+
+### Instalación de Complementos Necesarios
+Dado que esta nueva instancia no tiene instalados los complementos de la instancia principal, es necesario volver a descargar los siguientes paquetes de nodos en Node-RED:
+
+- `node-red-node-influxdb` (para conectar con InfluxDB)
+- `node-red-dashboard` (para la interfaz visual)
+
+Para instalar estos complementos, abre la pestaña de administración de Node-RED, dirígete a la sección de "Manage Palette" y busca e instala los paquetes mencionados.
+
+### Importar el Programa
+Para importar el flujo de Node-RED, sigue estos pasos:
+
+1. Dirígete a la sección de **Import** en Node-RED.
+2. Selecciona el archivo `flow_node_wifi.json`, ubicado en la carpeta `flows_nodered`.
+3. Este archivo contiene el programa que permite la integración de los sonómetros con conexión MQTT.
+
+![Programa en Node-RED](imagenes/programa_sono_wifi.png)
+
+### Configuración de los Nodos MQTT e InfluxDB
+Después de importar el flujo, es necesario configurar los nodos de conexión MQTT y los de la base de datos InfluxDB.
+
+- **Configuración MQTT:**
+  - Por defecto, el programa está configurado para conectarse al broker público `broker.emqx.io`, lo cual permite pruebas sin necesidad de configurar un servidor propio.
+  - Para un entorno de producción, se recomienda utilizar un broker privado para mayor seguridad.
+
+- **Configuración de InfluxDB:**
+  - Es necesario tener los siguientes datos a la mano:
+    - **Nombre de la organización** (Ejemplo: `CADI`).
+    - **Nombre del bucket** donde se almacenarán los datos (Ejemplo: `Ruido`). Asegúrate de que este bucket ya exista en tu base de datos.
+    - **Token** con permisos de escritura en el bucket.
+    - **Dirección y puerto** de la base de datos (Ejemplo: `localhost:8086`).
+
+### Acceso a la Interfaz Gráfica
+Una vez configurado el programa, puedes acceder a la interfaz gráfica de control en la siguiente dirección:
+
+[http://localhost:1881/ui](http://localhost:1881/ui)
+
+Desde esta interfaz, puedes configurar los sonómetros e indicarles cuándo iniciar o detener las mediciones.
+
+![Interfaz gráfica](imagenes/imagen_ui.png)
+
+### Consideraciones Finales
+Antes de configurar los sonómetros, asegúrate de que todos estén encendidos. Ten en cuenta que la configuración aplicada será la misma para todos los sonómetros activos.
+
+Si necesitas manejar varios grupos de sonómetros con configuraciones distintas, **no uses este programa**, ya que aplicará la misma configuración a todos los nodos. En su lugar, envía mensajes individuales a cada nodo, como se explicó en la sección anterior.
+
+
+---
