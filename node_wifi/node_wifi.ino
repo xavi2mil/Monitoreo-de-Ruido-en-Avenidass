@@ -8,12 +8,12 @@
 #include <ArduinoJson.h>  
 
 // informacion y configuracion del nodo
-const uint8_t nodeId = 1;
+const uint8_t nodeId = 39;
 int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas. 
 bool startMeasurements = false;
 int period=1;           // Tiempo de expocision o periodo 
 float vBatt=0;            // Voltaje de la batería
-const uint8_t vbatPin = 35;
+const uint8_t vbatPin = 5;
 const uint8_t bottomPin = 2;
 double leq_1s;          // Valor equivalente de un segundo 
 
@@ -322,19 +322,25 @@ void mic_i2s_reader_task(void* parameter) {
 }
 
 void mqtt_conect(void *parameter) {
-  setup_wifi();
+
   client.setServer(MQTT_SERVER, PORT);
   client.setCallback(callback);
-  JsonDocument doc;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-  const TickType_t xDelay = pdMS_TO_TICKS(5); // Esperar 5 ms
+
   while (true) {
-    if (!client.connected()) {reconnect();}
-    client.loop();
-    vTaskDelayUntil(&xLastWakeTime, xDelay);
-    // Dormir durante un breve período para evitar sobrecargar el procesador
+
+    check_wifi_reconnect();   // <-- 💥 FUNDAMENTAL
+
+    if (WiFi.status() == WL_CONNECTED) {
+      if (!client.connected()) {
+        reconnect_mqtt();
+      }
+      client.loop();
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
+
 
 
 void setup(){
@@ -496,35 +502,60 @@ void loop(){
 }
 
 void setup_wifi() {
-  // Conexión WiFi
+  WiFi.mode(WIFI_STA);
   WiFi.begin(SSID, PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+
+  unsigned long startAttemptTime = millis();
+
+  // Intentar solo 10 segundos
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
+    delay(200);
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("WiFi conectado");
+  } else {
+    Serial.println("No se pudo conectar al WiFi");
   }
 }
 
-void reconnect() {
-  // Loop hasta que nos reconectemos exitosamente
-  while (!client.connected()) {
-    Serial.println("Intentando conexión MQTT...");
-    String client_id = "esp32-client-" + String(WiFi.macAddress());
-    // Intentar conectarse
-    if (client.connect(client_id.c_str(), MQTT_USER_NAME, MQTT_PASSWORD)) {
-        Serial.println("Conectado al servidor MQTT.");
-        client.subscribe("sono/setTime");      // Recibe la fecha y hora actuales.
-        client.subscribe("sono/setConfig");    // Recibe la configuración.
-        client.subscribe("sono/info/request"); // Recibe una solicitud de envio de información.
-        client.subscribe("sono/startMeasurements");
-    } 
-    else {
-      // Si no nos podemos conectar, esperamos un momento antes de intentar de nuevo
-      Serial.print("Error de conexión MQTT, rc=");
-      Serial.print(client.state());
-      Serial.println(" Intentando de nuevo en 5 segundos...");
-      delay(5000);
-    }
+unsigned long lastWifiReconnectAttempt = 0;
+
+void check_wifi_reconnect() {
+  if (WiFi.status() == WL_CONNECTED) return;
+
+  // Intentar reconectar cada 5 segundos
+  if (millis() - lastWifiReconnectAttempt >= 5000) {
+    lastWifiReconnectAttempt = millis();
+    Serial.println("Intentando reconectar WiFi...");
+    WiFi.disconnect();
+    WiFi.begin(SSID, PASSWORD);
   }
 }
+
+
+
+void reconnect_mqtt() {
+  static unsigned long lastAttempt = 0;
+
+  if (millis() - lastAttempt < 5000) return; 
+  lastAttempt = millis();
+
+  Serial.println("Intentando conexión MQTT...");
+  String client_id = "esp32-client-" + String(WiFi.macAddress());
+
+  if (client.connect(client_id.c_str(), MQTT_USER_NAME, MQTT_PASSWORD)) {
+    Serial.println("MQTT reconectado");
+    client.subscribe("sono/setTime");
+    client.subscribe("sono/setConfig");
+    client.subscribe("sono/info/request");
+    client.subscribe("sono/startMeasurements");
+  } else {
+    Serial.print("Fallo MQTT rc=");
+    Serial.println(client.state());
+  }
+}
+
 
 // Función que se ejecuta cuando llega un mensaje a un topic
 // al que el cliente esta suscrito
