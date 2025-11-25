@@ -13,7 +13,7 @@ int numMeasurements = 10; // Número de mediciones que guarda antes de enviarlas
 bool startMeasurements = false;
 int period=1;           // Tiempo de expocision o periodo 
 float vBatt=0;            // Voltaje de la batería
-const uint8_t vbatPin = 5;
+const uint8_t vbatPin = 35;
 const uint8_t bottomPin = 2;
 double leq_1s;          // Valor equivalente de un segundo 
 
